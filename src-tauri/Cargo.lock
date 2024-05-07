@@ -70,6 +70,8 @@ dependencies = [
  "serde_json",
  "tauri",
  "tauri-build",
+ "walkdir",
+ "xxhash-rust",
 ]
 
 [[package]]
@@ -1953,7 +1955,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c2a198fb6b0eada2a8df47933734e6d35d350665a33a3593d7164fa52c75c19"
 dependencies = [
  "cfg-if",
- "windows-targets 0.48.5",
+ "windows-targets 0.52.5",
 ]
 
 [[package]]
@@ -5214,6 +5216,12 @@ dependencies = [
  "libc",
  "winapi",
 ]
+
+[[package]]
+name = "xxhash-rust"
+version = "0.8.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "927da81e25be1e1a2901d59b81b37dd2efd1fc9c9345a55007f09bf5a2d3ee03"
 
 [[package]]
 name = "zbus"

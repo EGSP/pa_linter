@@ -1,7 +1,30 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use walkdir::WalkDir;
+
+mod nodes;
+
 fn main() {
+
+    let binding = std::env::current_exe().unwrap();
+    let executable_directory = binding.parent().unwrap();
+
+    println!("executable directory: {:?}", executable_directory);
+
+    for entry in WalkDir::new(executable_directory) {
+        let entry = entry.unwrap();
+        if entry.file_type().is_dir() {
+            println!("Directory: {}", entry.path().display());
+        } else if entry.file_type().is_file() {
+            println!("File: {}", entry.path().display());
+        }else{
+            println!("Other: {}", entry.path().display());
+        }
+    }
+
+
+
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![greet])
         .run(tauri::generate_context!())
