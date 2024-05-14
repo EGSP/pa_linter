@@ -23,25 +23,37 @@ fn main() {
     //     }
     // }
 
-    const test_json_path: &str = "c:/Workroot/softdev/pa_linter_test/orbital_fabrication_bot.json";
+    //const test_json_path: &str = "c:/Workroot/softdev/pa_linter_test/orbital_fabrication_bot.json";
+    const test_folder_path: &str = "c:/Workroot/softdev/pa_linter_test";
+    
+    let results = analyzer::analyze_folder(test_folder_path);
+    for result in results {
+        println!("{:#?}", result);
+    }
 
-    let test_json_str = std::fs::read_to_string(test_json_path).unwrap();
-    let test_json_value: Value = serde_json::from_str(&test_json_str).unwrap();
 
-    let tips = analyzer::analyze_json(&test_json_value);
-    println!("{:#?}", tips);
+    // let test_json_str = std::fs::read_to_string(test_json_path).unwrap();
+    // let test_json_value: Value = serde_json::from_str(&test_json_str).unwrap();
+
+    // let tips = analyzer::analyze_json(&test_json_value);
+    // println!("{:#?}", tips);
     
 
-    // tauri::Builder::default()
-    //     .invoke_handler(tauri::generate_handler![greet])
-    //     .run(tauri::generate_context!())
-    //     .expect("error while running tauri application");
+    tauri::Builder::default()
+        .invoke_handler(tauri::generate_handler![greet, analyze_folder])
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
 }
 
 
 #[tauri::command]
 fn greet(name: &str) -> String {
     format!("Hello, {}!", name)
+}
+
+#[tauri::command]
+fn analyze_folder(folder_path: &str) -> Vec<analyzer::AnalysisResult> {
+    analyzer::analyze_folder(folder_path)
 }
 
 // найти свойства в json файлах со строковыми значениями.

@@ -1,7 +1,23 @@
-use serde_json::Value;
+use serde::Deserialize;
+use serde::Serialize;
 use serde_json::Map;
+use serde_json::Value;
+use walkdir::WalkDir;
 
-#[derive(Debug)]
+
+#[derive(Serialize,Deserialize,Debug)]
+pub struct AnalysisResult {
+    pub file_path: String,
+    pub tips: Vec<Tip>,
+}
+
+impl AnalysisResult {
+    pub fn new(file_path: String, tips: Vec<Tip>) -> Self {
+        Self { file_path, tips }
+    }
+}
+
+#[derive(Serialize,Deserialize,Debug)]
 pub struct Tip {
     pub property_name: String,
     pub property_value: String,
@@ -19,14 +35,45 @@ impl Tip {
     }
 }
 
+/// Recursively analyzes all JSON files in the given `folder_path`
+/// and returns a vector of `AnalysisResult`s.
+///
+/// This function walks the directory tree rooted at `folder_path`
+/// and analyzes all files it finds. If a file is not a JSON file,
+/// it is simply ignored. If a file is a JSON file, it is analyzed
+/// and the resulting `AnalysisResult` is added to the resulting vector.
+///
+/// The analysis of a single file is done by the `analyze_file` function.
+pub fn analyze_folder(folder_path: &str) -> Vec<AnalysisResult> {
+    let mut results = Vec::new();
+
+    for entry in WalkDir::new(folder_path).contents_first(true) {
+        let entry = entry.unwrap();
+        if entry.file_type().is_file() {
+            if entry.path().extension().unwrap() == "json" {
+                let analysis_result = analyze_file(entry.path().to_str().unwrap());
+                results.push(analysis_result);
+            }
+        }
+    }
+    results
+}
+
+pub fn analyze_file(file_path: &str) -> AnalysisResult {
+    let json: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(file_path).unwrap()).unwrap();
+    let tips = analyze_json(&json);
+    AnalysisResult::new(file_path.to_string(), tips)
+}
+
 pub fn analyze_json(json: &serde_json::Value) -> Vec<Tip> {
     let mut tips = Vec::new();
     tips.append(&mut iterate_json_value(&String::from("root"), json));
-    tips 
+    tips
 }
 
 fn iterate_json_value(v_keyname: &String, v: &serde_json::Value) -> Vec<Tip> {
-    let mut tips = match v {
+    let tips = match v {
         Value::String(s) => analyze_json_string(&v_keyname, s),
         Value::Object(o) => iterate_json_object(&format!("{{{}}}", v_keyname), o),
         Value::Array(a) => iterate_json_array(&format!("[{}]", v_keyname), a),
@@ -70,19 +117,27 @@ fn iterate_json_array(a_keyname: &String, a: &Vec<Value>) -> Vec<Tip> {
 /// tip.
 fn analyze_json_string(s_keyname: &String, s: &String) -> Vec<Tip> {
     if (!has_slash(s)) {
-        return Vec::new(); // not a relative path to a JSON file
+        return Vec::new(); // not a relative path
     }
 
     let mut tips = Vec::new();
-    if(!has_first_slash(s)) {
-        tips.push(Tip::new(s_keyname.to_string(), s.to_string(), "Missing leading slash".to_string()));
+    if (!has_first_slash(s)) {
+        tips.push(Tip::new(
+            s_keyname.to_string(),
+            s.to_string(),
+            "Missing leading slash".to_string(),
+        ));
     }
 
-    if(has_incorrect_slash(s)) {
-        tips.push(Tip::new(s_keyname.to_string(), s.to_string(), "Incorrect slash".to_string()));
+    if (has_incorrect_slash(s)) {
+        tips.push(Tip::new(
+            s_keyname.to_string(),
+            s.to_string(),
+            "Incorrect slash".to_string(),
+        ));
     }
 
-    // Сделать продвинутую проверку для разных типов файлов: джсон, звуки, эффекты
+    // TODO: Сделать продвинутую проверку для разных типов файлов: джсон, звуки, эффекты
     // Не у всех путей есть расширения, но у всех есть корневые папки
     // if(!has_json_extension(s)) {
     //     tips.push(Tip::new(s_keyname.to_string(), s.to_string(), "Missing .json extension".to_string()));
@@ -133,7 +188,6 @@ fn replace_slash(s: &str) -> String {
 fn has_json_extension(s: &str) -> bool {
     s.ends_with(".json")
 }
-
 
 // fn iterate_json_value(v_keyname: &String, v: &serde_json::Value) {
 //     match v {
