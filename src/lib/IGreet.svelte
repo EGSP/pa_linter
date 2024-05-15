@@ -11,7 +11,7 @@
 
 <div>
 	<input id="greet-input" placeholder="Enter a name..." bind:value={name} />
-	<button on:click={greet}>Greet</button>
+	<button type="button" class="btn variant-filled" on:click={greet}>Greet</button>
 	<p>{greetMsg}</p>
 </div>
 

@@ -1,29 +1,14 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use nodes::ArenaTree;
 use serde_json::{Map, Value};
 
 mod nodes;
 mod analyzer;
 
 fn main() {
-    // let binding = std::env::current_exe().unwrap();
-    // let executable_directory = binding.parent().unwrap();
 
-    // println!("executable directory: {:?}", executable_directory);
-
-    // for entry in WalkDir::new(executable_directory) {
-    //     let entry = entry.unwrap();
-    //     if entry.file_type().is_dir() {
-    //         println!("Directory: {}", entry.path().display());
-    //     } else if entry.file_type().is_file() {
-    //         println!("File: {}", entry.path().display());
-    //     }else{
-    //         println!("Other: {}", entry.path().display());
-    //     }
-    // }
-
-    //const test_json_path: &str = "c:/Workroot/softdev/pa_linter_test/orbital_fabrication_bot.json";
     const test_folder_path: &str = "c:/Workroot/softdev/pa_linter_test";
     
     let results = analyzer::analyze_folder(test_folder_path);
@@ -31,13 +16,7 @@ fn main() {
         println!("{:#?}", result);
     }
 
-
-    // let test_json_str = std::fs::read_to_string(test_json_path).unwrap();
-    // let test_json_value: Value = serde_json::from_str(&test_json_str).unwrap();
-
-    // let tips = analyzer::analyze_json(&test_json_value);
-    // println!("{:#?}", tips);
-    
+    const tree_test_folder_path: &str = "c:/Workroot/softdev/pa_linter_test_tree/";
 
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![greet, analyze_folder])
@@ -55,6 +34,23 @@ fn greet(name: &str) -> String {
 fn analyze_folder(folder_path: &str) -> Vec<analyzer::AnalysisResult> {
     analyzer::analyze_folder(folder_path)
 }
+
+// fn scan_project_folder(folder_path: &str) -> Result<ArenaTree, String> {
+//     // if folder contains modinfo.json file, then it is a project folder
+//     if(!std::path::Path::new(folder_path).join("modinfo.json").exists()) {
+//         return Err("Folder is not a project folder. Project folder must contain modinfo.json file".to_string());   
+//     }
+
+//     let mut arena_tree = ArenaTree::new();
+
+//     // add root node
+//     let root_node = nodes::Node::new(String::from("root"), String::from(""));
+
+//     // for entry in WalkDir::new(folder_path).contents_first(true) {
+//     //     let entry = entry.unwrap();
+
+//     // }
+// }
 
 // найти свойства в json файлах со строковыми значениями.
 // если значение это относительный путь, то нужно проверить его на корректность.

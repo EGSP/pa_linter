@@ -1,22 +1,41 @@
 use std::collections::HashMap;
 
 pub struct Node {
+    pub id: i32,
+
     pub value: String,
 
-    parent: Option<i32>,
-    alternatives: Vec<i32>,
-    children: Vec<i32>,
+    pub parent: Option<i32>,
+    pub alternatives: Vec<i32>,
+    pub children: Vec<i32>,
 
     pub checksum: String,
 }
 
+impl Node {
+    pub fn new(value: String, checksum: String) -> Self {
+        Self {
+            id: 0,
+            value,
+            parent: None,
+            alternatives: Vec::new(),
+            children: Vec::new(),
+            checksum,
+        }
+    }
+}
+
 pub struct ArenaTree {
+    
     pub nodes_map: HashMap<i32, Node>,
 
     last_generated_id: i32,
 }
 
 impl ArenaTree {
+
+    pub const ROOT_ID: i32 = 0;
+
     pub fn new() -> Self {
         Self {
             nodes_map: HashMap::new(),
@@ -37,7 +56,12 @@ impl ArenaTree {
 
     /// Returns root node of this [`ArenaTree`].
     pub fn get_root_node(&self) -> Option<&Node> {
-        self.nodes_map.get(&0)
+        self.nodes_map.get(&Self::ROOT_ID)
+    }
+
+    pub fn add_root_node(&mut self, node: Node) -> () {
+        let id = Self::ROOT_ID;
+        self.nodes_map.insert(id, node);
     }
 
     /// Adds new node.

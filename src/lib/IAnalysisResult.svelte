@@ -6,8 +6,8 @@
 	export let tips: Tip[];
 </script>
 
-<div id="analysis-result">
-	<p>{file_path}</p>
+<div class="space-y-2" id="analysis-result">
+	<!-- <p>{file_path}</p> -->
 	{#each tips as tip}
 		<ITip
 			property_name={tip.property_name}
