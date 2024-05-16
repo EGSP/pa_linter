@@ -1,5 +1,8 @@
 use std::collections::HashMap;
 
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Node {
     pub id: i32,
 
@@ -25,15 +28,14 @@ impl Node {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ArenaTree {
-    
     pub nodes_map: HashMap<i32, Node>,
 
     last_generated_id: i32,
 }
 
 impl ArenaTree {
-
     pub const ROOT_ID: i32 = 0;
 
     pub fn new() -> Self {
@@ -42,7 +44,7 @@ impl ArenaTree {
             last_generated_id: 0,
         }
     }
-    
+
     /// Generates new id and returns it.
     fn generate_id(&mut self) -> i32 {
         self.last_generated_id += 1;
@@ -58,24 +60,45 @@ impl ArenaTree {
     pub fn get_root_node(&self) -> Option<&Node> {
         self.nodes_map.get(&Self::ROOT_ID)
     }
+    
+    pub fn get_nodes_without_parent(&self) -> Vec<&Node> {
+        self.nodes_map.values().filter(|node| node.parent.is_none()).collect()
+    }
 
-    pub fn add_root_node(&mut self, node: Node) -> () {
+    pub fn add_root_node(&mut self, node: Node) -> i32 {
         let id = Self::ROOT_ID;
         self.nodes_map.insert(id, node);
+        id
     }
 
-    /// Adds new node.
-    pub fn add_node_with_parent_node(&mut self, mut parent_node: Node, node: Node) -> () {
+    /// Adds new node parent id.
+    pub fn add_node_to_parent_id(&mut self, parent_id: i32, original_node: Node) -> i32 {
         let id = self.generate_id();
 
-        self.nodes_map.insert(id, node);
-        parent_node.children.push(id);   
+        let arena_node = Node {
+            id: id,
+            parent: Some(parent_id),
+            ..original_node
+        };
+
+        self.nodes_map.insert(id, arena_node);
+
+        self.nodes_map
+            .get_mut(&parent_id)
+            .unwrap()
+            .children
+            .push(id);
+        id
     }
 
-    /// Adds new node with parent id.
-    pub fn add_node_with_parent_id(&mut self, parent_id: i32, node: Node) -> () {
+    pub fn add_node(&mut self, original_node: Node) -> i32 {
         let id = self.generate_id();
-        self.nodes_map.insert(id, node);
-        self.nodes_map.get_mut(&parent_id).unwrap().children.push(id);
+        let arena_node = Node {
+            id: id,
+            ..original_node
+        };
+
+        self.nodes_map.insert(id, arena_node);
+        id
     }
 }

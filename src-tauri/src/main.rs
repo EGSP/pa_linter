@@ -1,29 +1,35 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use nodes::ArenaTree;
-use serde_json::{Map, Value};
+use std::path::Path;
 
-mod nodes;
+use nodes::{ArenaTree, Node};
+use serde_json::{Map, Value};
+use walkdir::{DirEntry, WalkDir};
+
 mod analyzer;
+mod nodes;
 
 fn main() {
+    const test_folder_path: &str = "c:/Workroot/softdev/pa_linter_test/";
 
-    const test_folder_path: &str = "c:/Workroot/softdev/pa_linter_test";
-    
     let results = analyzer::analyze_folder(test_folder_path);
     for result in results {
         println!("{:#?}", result);
     }
 
-    const tree_test_folder_path: &str = "c:/Workroot/softdev/pa_linter_test_tree/";
+    const tree_test_folder_path: &str =
+        "c:/Workroot/softdev/pa_linter_test_tree/Consultant-Balance-main";
 
-    tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![greet, analyze_folder])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+    let arena_tree = scan_project_folder(Path::new(tree_test_folder_path)).unwrap();
+    println!("{} nodes in arena tree", arena_tree.nodes_map.len());
+    println!("{:?}", arena_tree);
+
+    // tauri::Builder::default()
+    //     .invoke_handler(tauri::generate_handler![greet, analyze_folder])
+    //     .run(tauri::generate_context!())
+    //     .expect("error while running tauri application");
 }
-
 
 #[tauri::command]
 fn greet(name: &str) -> String {
@@ -35,22 +41,78 @@ fn analyze_folder(folder_path: &str) -> Vec<analyzer::AnalysisResult> {
     analyzer::analyze_folder(folder_path)
 }
 
-// fn scan_project_folder(folder_path: &str) -> Result<ArenaTree, String> {
-//     // if folder contains modinfo.json file, then it is a project folder
-//     if(!std::path::Path::new(folder_path).join("modinfo.json").exists()) {
-//         return Err("Folder is not a project folder. Project folder must contain modinfo.json file".to_string());   
-//     }
+fn scan_project_folder(folder_path: &Path) -> Result<ArenaTree, String> {
+    // if folder contains modinfo.json file, then it is a project folder
+    if !folder_path.join("modinfo.json").exists() {
+        return Err(
+            "Folder is not a project folder. Project folder must contain modinfo.json file"
+                .to_string(),
+        );
+    }
 
-//     let mut arena_tree = ArenaTree::new();
+    let mut arena_tree = ArenaTree::new();
 
-//     // add root node
-//     let root_node = nodes::Node::new(String::from("root"), String::from(""));
+    // // add root node
+    // let root_folder_name = get_path_name(folder_path);
+    // let root_node = nodes::Node::new(root_folder_name, String::from(""));
+    // arena_tree.add_root_node(root_node);
 
-//     // for entry in WalkDir::new(folder_path).contents_first(true) {
-//     //     let entry = entry.unwrap();
+    // iterate directory
+    iterate_directory(folder_path, &None, &mut arena_tree);
 
-//     // }
-// }
+    Ok(arena_tree)
+}
+
+fn iterate_directory(folder_path: &Path, previous_node: &Option<i32>, arena_tree: &mut ArenaTree) {
+    let folder_node: Node = Node::new(get_path_name(folder_path), String::from(""));
+    let folder_node_id: i32;
+
+    if previous_node.is_none() {
+        folder_node_id = arena_tree.add_node(folder_node);
+    } else {
+        folder_node_id = arena_tree.add_node_to_parent_id(previous_node.unwrap(), folder_node);
+    }
+
+
+
+    if("c:/Workroot/softdev/pa_linter_test_tree/Consultant-Balance-main\\pa\\fabber_builds" == folder_path.to_str().unwrap()) {
+        println!("folder_path: {}", folder_path.to_str().unwrap());
+    }
+
+    for entry in WalkDir::new(folder_path.to_str().unwrap())
+        .min_depth(1)
+        .max_depth(1)
+    {
+
+        
+        let entry = entry.unwrap();
+        let entry_name = entry.file_name().to_str().unwrap();
+        let entry_path = folder_path.join(entry_name);
+        let entry_path_ref = entry_path.as_path();
+
+        println!("{} + {}", folder_path.to_str().unwrap(), entry_name);
+        println!(" ");
+
+        if(entry_path_ref.to_str().unwrap() == "c:/Workroot/softdev/pa_linter_test_tree/Consultant-Balance-main\\pa\\fabber_builds") {
+            println!("entry_path_ref: {}", entry_path_ref.to_str().unwrap());
+        }
+
+        if entry.file_type().is_dir() {
+            iterate_directory(entry_path_ref, &Some(folder_node_id), arena_tree);
+        } else if entry.file_type().is_file() {
+            // let file_node = Node::new(entry_name.to_string(), String::from(""));
+            // arena_tree.add_node_to_parent_id(folder_node_id, file_node);
+        } 
+        else {
+
+            // do nothing
+        }
+    }
+}
+
+fn get_path_name(path: &Path) -> String {
+    path.file_name().unwrap().to_str().unwrap().to_string()
+}
 
 // найти свойства в json файлах со строковыми значениями.
 // если значение это относительный путь, то нужно проверить его на корректность.
@@ -95,6 +157,5 @@ fn analyze_folder(folder_path: &str) -> Vec<analyzer::AnalysisResult> {
 // узлы справочников могут хранить ссылки друг на друга, если
 // свойства в файлах ссылаются на другие файлы. Но думаю это лучше делать
 // отдельной мета-структурой.
-
 
 // Добавить авто-фикс проблем с путями.
