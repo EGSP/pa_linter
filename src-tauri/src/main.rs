@@ -25,10 +25,11 @@ fn main() {
     println!("{} nodes in arena tree", arena_tree.nodes_map.len());
     println!("{:?}", arena_tree);
 
-    // tauri::Builder::default()
-    //     .invoke_handler(tauri::generate_handler![greet, analyze_folder])
-    //     .run(tauri::generate_context!())
-    //     .expect("error while running tauri application");
+    tauri::Builder::default()
+        .invoke_handler(tauri::generate_handler![greet, analyze_folder,
+            get_project_folder_arena_tree])
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
 }
 
 #[tauri::command]
@@ -39,6 +40,11 @@ fn greet(name: &str) -> String {
 #[tauri::command]
 fn analyze_folder(folder_path: &str) -> Vec<analyzer::AnalysisResult> {
     analyzer::analyze_folder(folder_path)
+}
+
+#[tauri::command]
+fn get_project_folder_arena_tree(folder_path: &Path) -> Result<ArenaTree, String> {
+    scan_project_folder(folder_path)
 }
 
 fn scan_project_folder(folder_path: &Path) -> Result<ArenaTree, String> {

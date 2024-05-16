@@ -10,3 +10,20 @@ export type Tip = {
     property_value: string,
     message: string
 }
+
+
+export type Node = {
+    id: number,
+    value: string,
+
+    parent: number|null,
+    alternatives: number[],
+    children: number[],
+    
+    checksum: string
+}
+
+export type ArenaTree={
+    nodes_map: Map<number, Node>,
+
+}

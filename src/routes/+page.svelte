@@ -2,7 +2,7 @@
 	import { invoke } from '@tauri-apps/api/tauri';
 	import IGreet from '../lib/IGreet.svelte';
 	import IAnalysisResult from '../lib/IAnalysisResult.svelte';
-	import type { AnalysisResult } from '../lib/types';
+	import type { AnalysisResult, ArenaTree } from '../lib/types';
 	import { Accordion, AccordionItem, ListBox, ListBoxItem } from '@skeletonlabs/skeleton';
 	import IDocumentMagnifyingGlass from '$lib/icons/IconDocumentMagnifyingGlass.svelte';
 	import IconDocumentMagnifyingGlass from '$lib/icons/IconDocumentMagnifyingGlass.svelte';
@@ -17,11 +17,19 @@
 
 		console.log(analysis_results);
 	}
+
+	async function analyze_tree() {
+		let arena_tree = await invoke<ArenaTree>('get_project_folder_arena_tree', {
+			folderPath: 'c:/Workroot/softdev/pa_linter_test_tree/Consultant-Balance-main'
+		} );
+		console.log(arena_tree);
+	}
 	
 </script>
 
 <div id="container">
 	<button type="button" class="variant-filled btn" on:click={analyze} id="button">Analyze</button>
+	<button type="button" class="variant-filled btn" on:click={analyze_tree} id="button">Analyze tree</button>
 </div>
 <div class="variant-ringed-surface" id="results">
 	<Accordion padding="py-2 px-4">
