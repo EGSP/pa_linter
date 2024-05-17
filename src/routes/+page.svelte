@@ -1,12 +1,11 @@
 <script lang="ts">
 	import { invoke } from '@tauri-apps/api/tauri';
-	import IGreet from '../lib/IGreet.svelte';
 	import IAnalysisResult from '../lib/IAnalysisResult.svelte';
-	import type { AnalysisResult, ArenaTree } from '../lib/types';
+	import { ArenaTree, Node, type AnalysisResult} from '../lib/types';
 	import { Accordion, AccordionItem, ListBox, ListBoxItem } from '@skeletonlabs/skeleton';
-	import IDocumentMagnifyingGlass from '$lib/icons/IconDocumentMagnifyingGlass.svelte';
-	import IconDocumentMagnifyingGlass from '$lib/icons/IconDocumentMagnifyingGlass.svelte';
 	import IconExclamationTriangle from '$lib/icons/IconExclamationTriangle.svelte';
+
+	import IProjectArenaTree from '$lib/IProjectArenaTree.svelte';
 
 	let analysis_results = new Array<AnalysisResult>();
 
@@ -18,13 +17,27 @@
 		console.log(analysis_results);
 	}
 
+	let project_arena_tree: ArenaTree;
+
 	async function analyze_tree() {
-		let arena_tree = await invoke<ArenaTree>('get_project_folder_arena_tree', {
+		let arena_tree_corrupted: ArenaTree;
+		arena_tree_corrupted = await invoke<ArenaTree>('get_project_folder_arena_tree', {
 			folderPath: 'c:/Workroot/softdev/pa_linter_test_tree/Consultant-Balance-main'
 		} );
-		console.log(arena_tree);
+		project_arena_tree = new ArenaTree();
+
+		let nodes_array = arena_tree_corrupted["nodes_map"] as unknown as Array<Node>;
+		let nodes_map = new Map<string, Node>();
+		for (let i in nodes_array) {
+			nodes_map.set(nodes_array[i].id.toString(), nodes_array[i]);
+		}
+		project_arena_tree.nodes_map = nodes_map;
+
+		console.log("project_arena_tree: ");
+		console.log(project_arena_tree); // ok
+		console.log(project_arena_tree.nodes_map); // ok
+		console.log(project_arena_tree.nodes_map.size); // undefined ?????????????????
 	}
-	
 </script>
 
 <div id="container">
@@ -47,5 +60,11 @@
 			<p>No results</p>
 		{/if}
 	</Accordion>
+</div>
+<div>
+	{#if project_arena_tree}
+	<div>Arena Length Top: {project_arena_tree?.nodes_map.size}</div>
+	<IProjectArenaTree project_arena_tree={project_arena_tree} project_arena_tree_length={project_arena_tree.nodes_map.size} />
+	{/if}
 </div>
 

@@ -2,6 +2,14 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ArenaTree {
+    pub nodes_map: HashMap<i32, Node>,
+
+    last_generated_id: i32,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Node {
     pub id: i32,
@@ -26,13 +34,6 @@ impl Node {
             checksum,
         }
     }
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ArenaTree {
-    pub nodes_map: HashMap<i32, Node>,
-
-    last_generated_id: i32,
 }
 
 impl ArenaTree {

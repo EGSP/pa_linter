@@ -11,19 +11,17 @@ export type Tip = {
     message: string
 }
 
-
-export type Node = {
-    id: number,
-    value: string,
-
-    parent: number|null,
-    alternatives: number[],
-    children: number[],
-    
-    checksum: string
+export class ArenaTree {
+    nodes_map: Map<string, Node> = new Map<string, Node>();
 }
 
-export type ArenaTree={
-    nodes_map: Map<number, Node>,
+export class Node {
+    id: number = 0;
+    value: string = "";
 
+    parent: number|null = null;
+    alternatives: number[] = [];
+    children: number[] = [];
+    
+    checksum: string = "";
 }

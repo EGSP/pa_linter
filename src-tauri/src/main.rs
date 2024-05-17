@@ -1,6 +1,7 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use core::panic;
 use std::path::Path;
 
 use nodes::{ArenaTree, Node};
@@ -44,7 +45,11 @@ fn analyze_folder(folder_path: &str) -> Vec<analyzer::AnalysisResult> {
 
 #[tauri::command]
 fn get_project_folder_arena_tree(folder_path: &Path) -> Result<ArenaTree, String> {
-    scan_project_folder(folder_path)
+    let arena_tree = scan_project_folder(folder_path).unwrap();
+
+    let serialized = serde_json::to_string(&arena_tree).unwrap();
+    println!("{}", serialized);
+    Ok(arena_tree)
 }
 
 fn scan_project_folder(folder_path: &Path) -> Result<ArenaTree, String> {
@@ -74,7 +79,13 @@ fn iterate_directory(folder_path: &Path, previous_node: &Option<i32>, arena_tree
     let folder_node_id: i32;
 
     if previous_node.is_none() {
-        folder_node_id = arena_tree.add_node(folder_node);
+        if arena_tree.get_root_node().is_none() {
+           folder_node_id = arena_tree.add_root_node(folder_node); 
+        }else {
+            // корневые ноды можно определять по наличию родителя - можно сделать когда-нибудь.
+            panic!("Root node already exists in arena tree");
+        }
+        // folder_node_id = arena_tree.add_node(folder_node);
     } else {
         folder_node_id = arena_tree.add_node_to_parent_id(previous_node.unwrap(), folder_node);
     }
