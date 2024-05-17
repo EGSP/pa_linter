@@ -83,25 +83,17 @@ fn iterate_directory(folder_path: &Path, previous_node: &Option<i32>, arena_tree
            folder_node_id = arena_tree.add_root_node(folder_node); 
         }else {
             // корневые ноды можно определять по наличию родителя - можно сделать когда-нибудь.
+            // folder_node_id = arena_tree.add_node(folder_node);
             panic!("Root node already exists in arena tree");
         }
-        // folder_node_id = arena_tree.add_node(folder_node);
     } else {
         folder_node_id = arena_tree.add_node_to_parent_id(previous_node.unwrap(), folder_node);
-    }
-
-
-
-    if("c:/Workroot/softdev/pa_linter_test_tree/Consultant-Balance-main\\pa\\fabber_builds" == folder_path.to_str().unwrap()) {
-        println!("folder_path: {}", folder_path.to_str().unwrap());
     }
 
     for entry in WalkDir::new(folder_path.to_str().unwrap())
         .min_depth(1)
         .max_depth(1)
     {
-
-        
         let entry = entry.unwrap();
         let entry_name = entry.file_name().to_str().unwrap();
         let entry_path = folder_path.join(entry_name);
@@ -110,18 +102,13 @@ fn iterate_directory(folder_path: &Path, previous_node: &Option<i32>, arena_tree
         println!("{} + {}", folder_path.to_str().unwrap(), entry_name);
         println!(" ");
 
-        if(entry_path_ref.to_str().unwrap() == "c:/Workroot/softdev/pa_linter_test_tree/Consultant-Balance-main\\pa\\fabber_builds") {
-            println!("entry_path_ref: {}", entry_path_ref.to_str().unwrap());
-        }
-
         if entry.file_type().is_dir() {
             iterate_directory(entry_path_ref, &Some(folder_node_id), arena_tree);
         } else if entry.file_type().is_file() {
-            // let file_node = Node::new(entry_name.to_string(), String::from(""));
-            // arena_tree.add_node_to_parent_id(folder_node_id, file_node);
+            let file_node = Node::new(entry_name.to_string(), String::from(""));
+            arena_tree.add_node_to_parent_id(folder_node_id, file_node);
         } 
         else {
-
             // do nothing
         }
     }
