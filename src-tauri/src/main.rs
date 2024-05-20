@@ -2,14 +2,21 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use core::panic;
-use std::path::Path;
+use std::{cell::OnceCell, path::Path, sync::OnceLock};
 
-use nodes::{ArenaTree, Node};
+use nodes::{ArenaTree, Node, NodeId};
+use rand::Rng;
 use serde_json::{Map, Value};
 use walkdir::{DirEntry, WalkDir};
 
+use crate::{analyzers::json_analyzer::JsonAnalyzeTask, project::Project};
+
 mod analyzer;
 mod nodes;
+mod project;
+mod analyzers;
+
+static PROJECT:OnceLock<Project> = OnceLock::new();
 
 fn main() {
     const test_folder_path: &str = "c:/Workroot/softdev/pa_linter_test/";
@@ -18,17 +25,55 @@ fn main() {
     for result in results {
         println!("{:#?}", result);
     }
+    
+    // const tree_test_folder_path: &str =
+    //     "c:/Workroot/softdev/pa_linter_test_tree/Consultant-Balance-main";
+    const PROJECT_TEST_FOLDER_PATH:&str = "c:/Workroot/softdev/pa_linter_test_tree/Consultant-Balance-main";
 
-    const tree_test_folder_path: &str =
-        "c:/Workroot/softdev/pa_linter_test_tree/Consultant-Balance-main";
+    let project = Project::try_initilize_project(PROJECT_TEST_FOLDER_PATH);
+    if project.is_err() {
+        panic!("{}", project.err().unwrap());
+    }
+    let project = project.unwrap();
 
-    let arena_tree = scan_project_folder(Path::new(tree_test_folder_path)).unwrap();
+    let _ = PROJECT.set(project);
+
+    let project = PROJECT.get().unwrap();
+
+    let arena_tree = &project.arena_tree;
+
+    // let arena_tree = scan_project_folder(Path::new(tree_test_folder_path)).unwrap();
     println!("{} nodes in arena tree", arena_tree.nodes_map.len());
-    println!("{:?}", arena_tree);
+    // println!("{:?}", arena_tree);
+
+
+    // build paths for 3 random nodes
+    for _ in 0..3 {
+        let node_id = get_random_node_from_arena_tree(&arena_tree);
+        // let paths = build_node_path_from_arena_tree(&arena_tree, node_id);
+
+        let path = project.build_node_path(arena_tree,node_id);
+
+        let node = arena_tree.get_node_by_id(node_id).unwrap();
+        println!("{} path is {}", node.value, path);
+    }
+
+    for _ in 0..3 {
+        println!();
+    }
+
+    let json_task = JsonAnalyzeTask::new(&project);
+    let results = json_task.run();
+    for result in results {
+        println!("{:#?}", result);
+    }
 
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![greet, analyze_folder,
-            get_project_folder_arena_tree])
+        .invoke_handler(tauri::generate_handler![
+            greet,
+            analyze_folder,
+            get_project_folder_arena_tree
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
@@ -63,15 +108,31 @@ fn scan_project_folder(folder_path: &Path) -> Result<ArenaTree, String> {
 
     let mut arena_tree = ArenaTree::new();
 
-    // // add root node
-    // let root_folder_name = get_path_name(folder_path);
-    // let root_node = nodes::Node::new(root_folder_name, String::from(""));
-    // arena_tree.add_root_node(root_node);
-
     // iterate directory
     iterate_directory(folder_path, &None, &mut arena_tree);
 
     Ok(arena_tree)
+}
+
+fn build_node_path_from_arena_tree(arena_tree: &ArenaTree, node_id: i32) -> Vec<String> {
+    let mut node = arena_tree.get_node_by_id(node_id).unwrap();
+
+    let mut paths: Vec<String> = Vec::new();
+    paths.push(node.value.clone());
+
+    while node.parent.is_some() {
+        node = arena_tree.get_node_by_id(node.parent.unwrap()).unwrap();
+        paths.push(node.value.clone());
+    }
+
+    paths.reverse();
+    paths
+}
+
+fn get_random_node_from_arena_tree(arena_tree: &ArenaTree) -> i32 {
+    let nodes = arena_tree.get_nodes_all();
+    let random_index = rand::thread_rng().gen_range(0..nodes.len());
+    nodes[random_index].id
 }
 
 fn iterate_directory(folder_path: &Path, previous_node: &Option<i32>, arena_tree: &mut ArenaTree) {
@@ -80,8 +141,8 @@ fn iterate_directory(folder_path: &Path, previous_node: &Option<i32>, arena_tree
 
     if previous_node.is_none() {
         if arena_tree.get_root_node().is_none() {
-           folder_node_id = arena_tree.add_root_node(folder_node); 
-        }else {
+            folder_node_id = arena_tree.add_root_node(folder_node);
+        } else {
             // корневые ноды можно определять по наличию родителя - можно сделать когда-нибудь.
             // folder_node_id = arena_tree.add_node(folder_node);
             panic!("Root node already exists in arena tree");
@@ -107,8 +168,7 @@ fn iterate_directory(folder_path: &Path, previous_node: &Option<i32>, arena_tree
         } else if entry.file_type().is_file() {
             let file_node = Node::new(entry_name.to_string(), String::from(""));
             arena_tree.add_node_to_parent_id(folder_node_id, file_node);
-        } 
-        else {
+        } else {
             // do nothing
         }
     }

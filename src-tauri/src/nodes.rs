@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
+pub struct NodeId(i32);
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ArenaTree {
@@ -21,6 +22,7 @@ pub struct Node {
     pub children: Vec<i32>,
 
     pub checksum: String,
+
 }
 
 impl Node {
@@ -31,7 +33,7 @@ impl Node {
             parent: None,
             alternatives: Vec::new(),
             children: Vec::new(),
-            checksum,
+            checksum
         }
     }
 }
@@ -60,6 +62,10 @@ impl ArenaTree {
     /// Returns root node of this [`ArenaTree`].
     pub fn get_root_node(&self) -> Option<&Node> {
         self.nodes_map.get(&Self::ROOT_ID)
+    }
+
+    pub fn get_nodes_all(&self) -> Vec<&Node> {
+        self.nodes_map.values().collect()
     }
     
     pub fn get_nodes_without_parent(&self) -> Vec<&Node> {
