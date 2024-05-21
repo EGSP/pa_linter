@@ -9,22 +9,24 @@ use rand::Rng;
 use serde_json::{Map, Value};
 use walkdir::{DirEntry, WalkDir};
 
-use crate::{analyzers::json_analyzer::JsonAnalyzeTask, project::Project};
+use crate::{analyzers::json_analyzer::JsonAnalyzeTask, directory_image::{take_directory_image, DirectoryImage}, project::Project};
 
+mod analyzers;
 mod analyzer;
 mod nodes;
 mod project;
-mod analyzers;
+mod directory_image;
+
 
 static PROJECT:OnceLock<Project> = OnceLock::new();
 
 fn main() {
     const test_folder_path: &str = "c:/Workroot/softdev/pa_linter_test/";
 
-    let results = analyzer::analyze_folder(test_folder_path);
-    for result in results {
-        println!("{:#?}", result);
-    }
+    // let results = analyzer::analyze_folder(test_folder_path);
+    // for result in results {
+    //     println!("{:#?}", result);
+    // }
     
     // const tree_test_folder_path: &str =
     //     "c:/Workroot/softdev/pa_linter_test_tree/Consultant-Balance-main";
@@ -35,11 +37,9 @@ fn main() {
         panic!("{}", project.err().unwrap());
     }
     let project = project.unwrap();
-
     let _ = PROJECT.set(project);
 
     let project = PROJECT.get().unwrap();
-
     let arena_tree = &project.arena_tree;
 
     // let arena_tree = scan_project_folder(Path::new(tree_test_folder_path)).unwrap();
@@ -48,25 +48,30 @@ fn main() {
 
 
     // build paths for 3 random nodes
-    for _ in 0..3 {
-        let node_id = get_random_node_from_arena_tree(&arena_tree);
-        // let paths = build_node_path_from_arena_tree(&arena_tree, node_id);
+    // for _ in 0..3 {
+    //     let node_id = get_random_node_from_arena_tree(&arena_tree);
+    //     // let paths = build_node_path_from_arena_tree(&arena_tree, node_id);
 
-        let path = project.build_node_path(arena_tree,node_id);
+    //     let path = project.build_node_path(arena_tree,node_id);
 
-        let node = arena_tree.get_node_by_id(node_id).unwrap();
-        println!("{} path is {}", node.value, path);
-    }
+    //     let node = arena_tree.get_node_by_id(node_id).unwrap();
+    //     println!("{} path is {}", node.value, path);
+    // }
 
     for _ in 0..3 {
         println!();
     }
 
-    let json_task = JsonAnalyzeTask::new(&project);
-    let results = json_task.run();
-    for result in results {
-        println!("{:#?}", result);
-    }
+    // let json_task = JsonAnalyzeTask::new(&project);
+    // let results = json_task.run();
+    // for result in results {
+    //     println!("{:#?}", result);
+    // }
+
+    let directory_image = take_directory_image(PROJECT_TEST_FOLDER_PATH);
+    println!("STRUCT: {:#?}", directory_image);
+    let directory_image_json = serde_json::to_string(&directory_image).unwrap();
+    println!("JSON: {}", directory_image_json);
 
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
