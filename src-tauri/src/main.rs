@@ -2,23 +2,27 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use core::panic;
-use std::{cell::OnceCell, path::Path, sync::OnceLock};
+use std::{cell::OnceCell, path::Path, process::Command, sync::OnceLock};
 
 use nodes::{ArenaTree, Node, NodeId};
 use rand::Rng;
 use serde_json::{Map, Value};
+use tauri::api::file;
 use walkdir::{DirEntry, WalkDir};
 
-use crate::{analyzers::json_analyzer::JsonAnalyzeTask, directory_image::{take_directory_image, DirectoryImage}, project::Project};
+use crate::{
+    analyzers::json_analyzer::JsonAnalyzeTask,
+    directory_image::{take_directory_image, DirectoryImage},
+    project::Project,
+};
 
-mod analyzers;
 mod analyzer;
+mod analyzers;
+mod directory_image;
 mod nodes;
 mod project;
-mod directory_image;
 
-
-static PROJECT:OnceLock<Project> = OnceLock::new();
+static PROJECT: OnceLock<Project> = OnceLock::new();
 
 fn main() {
     const test_folder_path: &str = "c:/Workroot/softdev/pa_linter_test/";
@@ -27,10 +31,11 @@ fn main() {
     // for result in results {
     //     println!("{:#?}", result);
     // }
-    
+
     // const tree_test_folder_path: &str =
     //     "c:/Workroot/softdev/pa_linter_test_tree/Consultant-Balance-main";
-    const PROJECT_TEST_FOLDER_PATH:&str = "c:/Workroot/softdev/pa_linter_test_tree/Consultant-Balance-main";
+    const PROJECT_TEST_FOLDER_PATH: &str =
+        "c:/Workroot/softdev/pa_linter_test_tree/Consultant-Balance-main";
 
     let project = Project::try_initilize_project(PROJECT_TEST_FOLDER_PATH);
     if project.is_err() {
@@ -45,7 +50,6 @@ fn main() {
     // let arena_tree = scan_project_folder(Path::new(tree_test_folder_path)).unwrap();
     println!("{} nodes in arena tree", arena_tree.nodes_map.len());
     // println!("{:?}", arena_tree);
-
 
     // build paths for 3 random nodes
     // for _ in 0..3 {
@@ -70,14 +74,15 @@ fn main() {
 
     let directory_image = take_directory_image(PROJECT_TEST_FOLDER_PATH);
     println!("STRUCT: {:#?}", directory_image);
-    let directory_image_json = serde_json::to_string(&directory_image).unwrap();
-    println!("JSON: {}", directory_image_json);
+    // let directory_image_json = serde_json::to_string(&directory_image).unwrap();
+    // println!("JSON: {}", directory_image_json);
 
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
             greet,
             analyze_folder,
-            get_project_folder_arena_tree
+            get_project_folder_arena_tree,
+            c_take_directory_image
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -100,6 +105,31 @@ fn get_project_folder_arena_tree(folder_path: &Path) -> Result<ArenaTree, String
     let serialized = serde_json::to_string(&arena_tree).unwrap();
     println!("{}", serialized);
     Ok(arena_tree)
+}
+
+#[tauri::command]
+fn c_take_directory_image(folder_path: &Path) {
+    let image = take_directory_image(folder_path.to_str().unwrap());
+
+    let serialized = serde_json::to_string(&image).unwrap();
+    let closure_serialized = serialized.clone();
+    tauri::api::dialog::FileDialogBuilder::new()
+        .set_title("Save Directory Image")
+        .set_file_name("directory_image.json")
+        .save_file(move |file_path| {
+            if file_path.is_some() {
+                let file_path = file_path.unwrap();
+                let file_directory = file_path.parent().unwrap();
+                std::fs::write(&file_path, closure_serialized)
+                    .expect("Failed to write to file");
+                
+                Command::new("explorer")
+                    .arg(file_directory) // <- Specify the directory you'd like to open.
+                    .spawn()
+                    .unwrap();
+            }
+        });
+    println!("{}", serialized);
 }
 
 fn scan_project_folder(folder_path: &Path) -> Result<ArenaTree, String> {

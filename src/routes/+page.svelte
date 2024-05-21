@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { invoke } from '@tauri-apps/api/tauri';
+	import { open } from '@tauri-apps/api/dialog';
 	import IAnalysisResult from '../lib/IAnalysisResult.svelte';
 	import { ArenaTree, Node, type AnalysisResult} from '../lib/types';
 	import { Accordion, AccordionItem, ListBox, ListBoxItem } from '@skeletonlabs/skeleton';
@@ -38,11 +39,32 @@
 		console.log(project_arena_tree.nodes_map); // ok
 		console.log(project_arena_tree.nodes_map.size); // undefined ?????????????????
 	}
+
+	async function take_directory_image() {
+		let path;
+
+		const selected = await open({
+			directory: true,
+			multiple: false,
+		});
+
+		if (!selected) {
+			return;
+		}
+
+		path = selected;
+		console.log("Selected path: "+path);
+		
+		await invoke('c_take_directory_image', {
+			folderPath: path 
+		});
+	}
 </script>
 
 <div id="container">
 	<button type="button" class="variant-filled btn" on:click={analyze} id="button">Analyze</button>
 	<button type="button" class="variant-filled btn" on:click={analyze_tree} id="button">Analyze tree</button>
+	<button type="button" class="variant-filled btn" on:click={take_directory_image} id="button">Take image</button>
 </div>
 <div class="variant-ringed-surface" id="results">
 	<Accordion padding="py-2 px-4">
