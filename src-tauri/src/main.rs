@@ -4,6 +4,7 @@
 use core::panic;
 use std::{cell::OnceCell, path::Path, process::Command, sync::OnceLock};
 
+use editor::EditorEnvironment;
 use nodes::{ArenaTree, Node, NodeId};
 use rand::Rng;
 use serde_json::{Map, Value};
@@ -21,19 +22,19 @@ mod analyzers;
 mod directory_image;
 mod nodes;
 mod project;
+mod editor;
+mod ui;
 
 static PROJECT: OnceLock<Project> = OnceLock::new();
+static EDITOR_ENVIRONMENT: OnceLock<EditorEnvironment> = OnceLock::new();
 
 fn main() {
-    const test_folder_path: &str = "c:/Workroot/softdev/pa_linter_test/";
+    let editor_env = editor::try_ini_editor_environment();
+    if editor_env.is_err() {
+        panic!("{}", editor_env.err().unwrap());
+    }
+    let _ = EDITOR_ENVIRONMENT.set(editor_env.unwrap());
 
-    // let results = analyzer::analyze_folder(test_folder_path);
-    // for result in results {
-    //     println!("{:#?}", result);
-    // }
-
-    // const tree_test_folder_path: &str =
-    //     "c:/Workroot/softdev/pa_linter_test_tree/Consultant-Balance-main";
     const PROJECT_TEST_FOLDER_PATH: &str =
         "c:/Workroot/softdev/pa_linter_test_tree/Consultant-Balance-main";
 
@@ -41,48 +42,16 @@ fn main() {
     if project.is_err() {
         panic!("{}", project.err().unwrap());
     }
-    let project = project.unwrap();
-    let _ = PROJECT.set(project);
-
-    let project = PROJECT.get().unwrap();
-    let arena_tree = &project.arena_tree;
-
-    // let arena_tree = scan_project_folder(Path::new(tree_test_folder_path)).unwrap();
-    println!("{} nodes in arena tree", arena_tree.nodes_map.len());
-    // println!("{:?}", arena_tree);
-
-    // build paths for 3 random nodes
-    // for _ in 0..3 {
-    //     let node_id = get_random_node_from_arena_tree(&arena_tree);
-    //     // let paths = build_node_path_from_arena_tree(&arena_tree, node_id);
-
-    //     let path = project.build_node_path(arena_tree,node_id);
-
-    //     let node = arena_tree.get_node_by_id(node_id).unwrap();
-    //     println!("{} path is {}", node.value, path);
-    // }
-
-    for _ in 0..3 {
-        println!();
-    }
-
-    // let json_task = JsonAnalyzeTask::new(&project);
-    // let results = json_task.run();
-    // for result in results {
-    //     println!("{:#?}", result);
-    // }
-
-    let directory_image = take_directory_image(PROJECT_TEST_FOLDER_PATH);
-    println!("STRUCT: {:#?}", directory_image);
-    // let directory_image_json = serde_json::to_string(&directory_image).unwrap();
-    // println!("JSON: {}", directory_image_json);
+    let _ = PROJECT.set(project.unwrap());
+    
 
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
             greet,
             analyze_folder,
             get_project_folder_arena_tree,
-            c_take_directory_image
+            c_take_directory_image,
+            c_show_directory_images
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -123,13 +92,16 @@ fn c_take_directory_image(folder_path: &Path) {
                 std::fs::write(&file_path, closure_serialized)
                     .expect("Failed to write to file");
                 
-                Command::new("explorer")
-                    .arg(file_directory) // <- Specify the directory you'd like to open.
-                    .spawn()
-                    .unwrap();
+                let _ = editor::reveal_in_explorer(file_directory);
             }
         });
     println!("{}", serialized);
+}
+
+#[tauri::command]
+fn c_show_directory_images() -> Vec<DirectoryImage> {
+    let editor_env = EDITOR_ENVIRONMENT.get().unwrap();
+    editor_env.get_directory_images()
 }
 
 fn scan_project_folder(folder_path: &Path) -> Result<ArenaTree, String> {

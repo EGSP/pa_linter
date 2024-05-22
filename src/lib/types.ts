@@ -25,3 +25,8 @@ export class Node {
     
     checksum: string = "";
 }
+
+export type DirectoryImage= {
+    name: string,
+    files: string[],
+}

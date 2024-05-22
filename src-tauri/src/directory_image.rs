@@ -7,6 +7,8 @@ pub struct DirectoryImage{
     pub files: Vec<String>
 }
 
+
+
 impl DirectoryImage{
     pub fn new(name: String, files: Vec<String>) -> Self{
         Self{
