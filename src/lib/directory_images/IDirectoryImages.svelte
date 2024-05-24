@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { ListBox } from '@skeletonlabs/skeleton';
-	import type { DirectoryImage } from './types';
+	import type { DirectoryImage } from '../types';
 	import IDirectoryImage from './IDirectoryImage.svelte';
 
 	export let directory_images: DirectoryImage[] = [];

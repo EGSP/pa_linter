@@ -1,8 +1,7 @@
 <script lang="ts">
-	import ITip from './ITip.svelte';
-	import type {Tip} from './types';
+	import ITip from '$lib/project/analyze/ITip.svelte';
+	import type {Tip} from '$lib/types';
 
-	export let file_path: string;
 	export let tips: Tip[];
 </script>
 

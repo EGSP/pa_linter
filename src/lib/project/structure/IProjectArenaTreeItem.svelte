@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { TreeViewItem } from '@skeletonlabs/skeleton';
-	import type { ArenaTree, Node } from './types';
+	import type { ArenaTree, Node } from "$lib/types";
     import IProjectArenaTreeItem from './IProjectArenaTreeItem.svelte';
 
 	export let project_arena_tree: ArenaTree;
