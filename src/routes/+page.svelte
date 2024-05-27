@@ -13,6 +13,7 @@
 	import CarbonScanAlt from '$lib/icons/CarbonScanAlt.svelte';
 	import { onMount } from 'svelte';
 	import CarbonRepoSourceCode from '$lib/icons/CarbonRepoSourceCode.svelte';
+	import Frame from '$lib/components/Frame.svelte';
 
 	let active_viewport: string = 'project';
 
@@ -92,11 +93,11 @@
 			{/if}
 		</div>
 
-		<div id="project-viewport" class="w-screen h-screen flex" style:display={active_viewport === 'project' ? null : 'none'}>
+		<Frame display={active_viewport === 'project' ? null : 'none'} direction={'row'}>
 			{#if ini_project_viewport}
 				<IProjectViewport />
 			{/if}
-		</div>
+		</Frame>
 		<!-- <div id="container">
 			<button type="button" class="variant-filled btn" on:click={analyze} id="button"
 				>Analyze</button
@@ -131,6 +132,7 @@
 	.workspace {
 		display: flex;
 		flex-flow: column;
-		width: 100vw;
+		width: 100%;
+		height: 100%;
 	}
 </style>

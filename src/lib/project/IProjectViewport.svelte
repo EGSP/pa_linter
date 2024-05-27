@@ -6,6 +6,7 @@
 	import IAnalysisResult from './analyze/IAnalysisResult.svelte';
 	import IProjectArenaTree from './structure/IProjectArenaTree.svelte';
 	import { onMount } from 'svelte';
+	import Frame from '$lib/components/Frame.svelte';
 
 	let analysis_results = new Array<AnalysisResult>();
 	async function analyze() {
@@ -38,11 +39,11 @@
 	});
 </script>
 
-<div class="project-viewport w-screen h-screen" id="project-viewport-component">
-	<div class="project-structure basis-16">
+<Frame display={null} direction={'row'}>
+	<div class="project-tree" id="project-tree">
 		{#if project_arena_tree}
 			<div>Arena Length Top: {project_arena_tree?.nodes_map.size}</div>
-			<IProjectArenaTree 
+			<IProjectArenaTree
 				{project_arena_tree}
 				project_arena_tree_length={project_arena_tree.nodes_map.size}
 			/>
@@ -66,16 +67,26 @@
 			{/if}
 		</Accordion>
 	</div>
+</Frame>
+<div class="project-viewport" id="project-viewport-component">
+	
 </div>
 
 <style>
-	.project-viewport {
+	/* .project-viewport {
 		display: flex;
-        flex: none;
 		flex-direction: row;
-	}
-	.project-structure {
-        flex: none;
-        overflow: scroll;
+		width: 100%;
+		height: 100%;
+	} */
+	.project-tree {
+		display: flex;
+		flex-direction: column;
+
+		width: 20%;
+		max-width: 20%;
+
+		overflow-y: scroll;
+		overflow-x: scroll;
 	}
 </style>

@@ -23,7 +23,7 @@
     
 </script>
 
-<TreeViewItem>
+<TreeViewItem >
 	<span>{node.value}</span>
 	<span>{node.children.length}</span>
 
@@ -38,3 +38,4 @@
 		{/if}
 	</svelte:fragment>
 </TreeViewItem>
+
