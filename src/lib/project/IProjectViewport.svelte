@@ -1,7 +1,7 @@
 <script lang="ts">
 	import IconExclamationTriangle from '$lib/icons/IconExclamationTriangle.svelte';
 	import { ArenaTree, Node, type AnalysisResult } from '$lib/types';
-	import { Accordion, AccordionItem } from '@skeletonlabs/skeleton';
+	import { Accordion, AccordionItem } from 'carbon-components-svelte';
 	import { invoke } from '@tauri-apps/api';
 	import IAnalysisResult from './analyze/IAnalysisResult.svelte';
 	import IProjectArenaTree from './structure/IProjectArenaTree.svelte';
@@ -9,7 +9,8 @@
 	import Frame from '$lib/components/Frame.svelte';
 	import CarbonRun from '$lib/icons/CarbonRun.svelte';
 
-	import { Button } from "carbon-components-svelte";
+	import { Button } from 'carbon-components-svelte';
+	import Label from '$lib/components/Label.svelte';
 
 	let analysis_results = new Array<AnalysisResult>();
 	async function analyze() {
@@ -45,9 +46,13 @@
 <Frame>
 	<Frame direction={'column'} fixed_width={'300px'}>
 		<div class="action-bar">
-			<Button on:click={analyze} kind="secondary" size="small"
-			icon={CarbonRun}
-			iconDescription="Analyze project folder"/>
+			<Button
+				on:click={analyze}
+				kind="secondary"
+				size="small"
+				icon={CarbonRun}
+				iconDescription="Analyze project folder"
+			/>
 		</div>
 
 		<div class="project-tree" id="project-tree">
@@ -61,23 +66,26 @@
 		</div>
 	</Frame>
 
-	<div class="variant-ringed-surface" id="results">
-		<Accordion padding="py-2 px-4">
+	<Frame direction={'column'} fixed_width={'600px'}>
+		<Accordion align="start" size="sm">
 			{#if analysis_results.length > 0}
 				{#each analysis_results as result, i}
-					<AccordionItem class="variant-ringed-surface">
-						<svelte:fragment slot="lead"><IconExclamationTriangle /></svelte:fragment>
-						<svelte:fragment slot="summary">{result.file_path}</svelte:fragment>
-						<svelte:fragment slot="content">
-							<IAnalysisResult tips={result.tips} />
+					<AccordionItem>
+						<svelte:fragment slot="title">
+							<div class="flex">
+								<IconExclamationTriangle />
+								<!-- {result.file_path} -->
+								<Label text={result.file_path} />
+							</div>
 						</svelte:fragment>
+						<IAnalysisResult tips={result.tips} />
 					</AccordionItem>
 				{/each}
 			{:else}
 				<p>No results</p>
 			{/if}
 		</Accordion>
-	</div>
+	</Frame>
 </Frame>
 
 <style>
