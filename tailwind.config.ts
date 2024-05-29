@@ -19,7 +19,7 @@ const config = {
 		extend: {},
 	},
 	plugins: [
-		// 4. Append the Skeleton plugin (after other plugins)
+		//4. Append the Skeleton plugin (after other plugins)
 		skeleton({
 			themes: { preset: [ "rocket" ] }
 		})
