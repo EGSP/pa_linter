@@ -7,6 +7,9 @@
 	import IProjectArenaTree from './structure/IProjectArenaTree.svelte';
 	import { onMount } from 'svelte';
 	import Frame from '$lib/components/Frame.svelte';
+	import CarbonRun from '$lib/icons/CarbonRun.svelte';
+
+	import { Button } from "carbon-components-svelte";
 
 	let analysis_results = new Array<AnalysisResult>();
 	async function analyze() {
@@ -39,16 +42,24 @@
 	});
 </script>
 
-<Frame display={null} direction={'row'}>
-	<div class="project-tree" id="project-tree">
-		{#if project_arena_tree}
-			<div>Arena Length Top: {project_arena_tree?.nodes_map.size}</div>
-			<IProjectArenaTree
-				{project_arena_tree}
-				project_arena_tree_length={project_arena_tree.nodes_map.size}
-			/>
-		{/if}
-	</div>
+<Frame>
+	<Frame direction={'column'} fixed_width={'300px'}>
+		<div class="action-bar">
+			<Button on:click={analyze} kind="secondary" size="small"
+			icon={CarbonRun}
+			iconDescription="Analyze project folder"/>
+		</div>
+
+		<div class="project-tree" id="project-tree">
+			{#if project_arena_tree}
+				<div>Arena Length Top: {project_arena_tree?.nodes_map.size}</div>
+				<IProjectArenaTree
+					{project_arena_tree}
+					project_arena_tree_length={project_arena_tree.nodes_map.size}
+				/>
+			{/if}
+		</div>
+	</Frame>
 
 	<div class="variant-ringed-surface" id="results">
 		<Accordion padding="py-2 px-4">
@@ -68,9 +79,6 @@
 		</Accordion>
 	</div>
 </Frame>
-<div class="project-viewport" id="project-viewport-component">
-	
-</div>
 
 <style>
 	/* .project-viewport {
@@ -83,10 +91,17 @@
 		display: flex;
 		flex-direction: column;
 
-		width: 20%;
-		max-width: 20%;
-
 		overflow-y: scroll;
 		overflow-x: scroll;
+
+		width: 100%;
+		height: 100%;
+	}
+
+	.action-bar {
+		display: flex;
+		flex: none;
+		flex-flow: row;
+		width: 100%;
 	}
 </style>
