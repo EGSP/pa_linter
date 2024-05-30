@@ -1,12 +1,19 @@
 <script lang="ts">
 	import IconExclamationTriangle from '$lib/icons/IconExclamationTriangle.svelte';
 	import { ArenaTree, Node, type AnalysisResult } from '$lib/types';
-	import { Accordion, AccordionItem } from '@skeletonlabs/skeleton';
+	import { Accordion, AccordionItem, TreeView } from 'carbon-components-svelte';
 	import { invoke } from '@tauri-apps/api';
 	import IAnalysisResult from './analyze/IAnalysisResult.svelte';
 	import IProjectArenaTree from './structure/IProjectArenaTree.svelte';
 	import { onMount } from 'svelte';
 	import Frame from '$lib/components/Frame.svelte';
+	import CarbonRun from '$lib/icons/CarbonRun.svelte';
+
+	import { Button } from 'carbon-components-svelte';
+	import Label from '$lib/components/Label.svelte';
+	import type { TreeNode } from 'carbon-components-svelte/src/TreeView/TreeView.svelte';
+
+	import { Pane, Splitpanes } from 'svelte-splitpanes';
 
 	let analysis_results = new Array<AnalysisResult>();
 	async function analyze() {
@@ -34,59 +41,129 @@
 		project_arena_tree.nodes_map = nodes_map;
 	}
 
+	let project_tree_nested: TreeNode[] = [];
+	async function get_project_tree() {
+		let arena_tree_corrupted: ArenaTree;
+		arena_tree_corrupted = await invoke<ArenaTree>('get_project_folder_arena_tree', {
+			folderPath: 'c:/Workroot/softdev/pa_linter_test_tree/Consultant-Balance-main'
+		});
+		let nodes_array = arena_tree_corrupted['nodes_map'] as unknown as Array<Node>;
+
+		project_tree_nested = new Array<TreeNode>();
+
+		let nodes_map = new Map<string, Node>();
+		for (let i in nodes_array) {
+			nodes_map.set(nodes_array[i].id.toString(), nodes_array[i]);
+		}
+
+		let root_node = nodes_map.get('0');
+
+		if (root_node) {
+			project_tree_nested.push({
+				id: root_node.id.toString(),
+				text: root_node.value,
+				children: get_children(root_node.id.toString())
+			});
+		}
+
+		function get_children(node_id: string) {
+			let arena_node = nodes_map.get(node_id);
+			let children = new Array<TreeNode>();
+			if (arena_node) {
+				for (let child_id of arena_node.children) {
+					let child_node = nodes_map.get(child_id.toString());
+					if (child_node) {
+						children.push({
+							id: child_node.id.toString(),
+							text: child_node.value,
+							children: get_children(child_node.id.toString())
+						});
+					}
+				}
+			}
+
+			return children;
+		}
+	}
+
 	onMount(async () => {
+		await get_project_tree();
 		await analyze_tree();
 	});
 </script>
 
-<Frame display={null} direction={'row'}>
-	<div class="project-tree" id="project-tree">
-		{#if project_arena_tree}
-			<div>Arena Length Top: {project_arena_tree?.nodes_map.size}</div>
-			<IProjectArenaTree
-				{project_arena_tree}
-				project_arena_tree_length={project_arena_tree.nodes_map.size}
-			/>
-		{/if}
-	</div>
+<Frame>
+	<Splitpanes>
+		<Pane>
+			<Frame direction={'column'}>
+				<div class="action-bar">
+					<Button
+						on:click={analyze}
+						kind="secondary"
+						size="small"
+						icon={CarbonRun}
+						iconDescription="Analyze project folder"
+					/>
+				</div>
 
-	<div class="variant-ringed-surface" id="results">
-		<Accordion padding="py-2 px-4">
-			{#if analysis_results.length > 0}
-				{#each analysis_results as result, i}
-					<AccordionItem class="variant-ringed-surface">
-						<svelte:fragment slot="lead"><IconExclamationTriangle /></svelte:fragment>
-						<svelte:fragment slot="summary">{result.file_path}</svelte:fragment>
-						<svelte:fragment slot="content">
-							<IAnalysisResult tips={result.tips} />
-						</svelte:fragment>
-					</AccordionItem>
-				{/each}
-			{:else}
-				<p>No results</p>
-			{/if}
-		</Accordion>
-	</div>
+				<div class="project-tree" id="project-tree">
+					{#if project_arena_tree}
+						<div>Arena Length Top: {project_arena_tree?.nodes_map.size}</div>
+						<IProjectArenaTree
+							{project_arena_tree}
+							project_arena_tree_length={project_arena_tree.nodes_map.size}
+						/>
+					{/if}
+
+					{#if project_tree_nested}
+						<TreeView
+							labelText="Project Tree"
+							children={project_tree_nested}
+							style="overflow:unset"
+						/>
+					{/if}
+				</div>
+			</Frame>
+		</Pane>
+		<Pane>
+			<Frame direction={'column'}>
+				<Accordion align="start" size="sm">
+					{#if analysis_results.length > 0}
+						{#each analysis_results as result, i}
+							<AccordionItem>
+								<svelte:fragment slot="title">
+									<div class="flex">
+										<IconExclamationTriangle/>
+										<!-- {result.file_path} -->
+										<Label text={result.file_path} />
+									</div>
+								</svelte:fragment>
+								<IAnalysisResult tips={result.tips} />
+							</AccordionItem>
+						{/each}
+					{:else}
+						<p>No results</p>
+					{/if}
+				</Accordion>
+			</Frame>
+		</Pane>
+	</Splitpanes>
 </Frame>
-<div class="project-viewport" id="project-viewport-component">
-	
-</div>
 
 <style>
-	/* .project-viewport {
-		display: flex;
-		flex-direction: row;
-		width: 100%;
-		height: 100%;
-	} */
 	.project-tree {
 		display: flex;
 		flex-direction: column;
+		text-wrap: nowrap;
 
-		width: 20%;
-		max-width: 20%;
+		width: 100%;
+		height: 100%;
+	}
 
-		overflow-y: scroll;
-		overflow-x: scroll;
+	.action-bar {
+		display: flex;
+		flex: none;
+		flex-flow: row;
+		width: 100%;
 	}
 </style>
