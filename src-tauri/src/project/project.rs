@@ -19,7 +19,7 @@ impl Project {
             arena_tree,
         }
     }
-
+//
     pub fn is_project_folder(folder_path: &str) -> Result<bool, String> {
         let folder_path = Path::new(folder_path);
         if folder_path.is_file() {

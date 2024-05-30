@@ -6,6 +6,7 @@ use std::{cell::OnceCell, path::Path, process::Command, sync::OnceLock};
 
 use editor::EditorEnvironment;
 use nodes::{ArenaTree, Node, NodeId};
+use project::repos::repository;
 use rand::Rng;
 use serde_json::{Map, Value};
 use tauri::api::file;
@@ -24,6 +25,7 @@ mod nodes;
 mod project;
 mod editor;
 mod ui;
+mod quicks;
 
 static PROJECT: OnceLock<Project> = OnceLock::new();
 static EDITOR_ENVIRONMENT: OnceLock<EditorEnvironment> = OnceLock::new();
@@ -50,7 +52,7 @@ fn main() {
         if folder_path.is_none() {
             return;
         }
-        let repositories = project::repos::repository::find_repositories(&folder_path.unwrap());
+        let repositories = repository::find_repositories(&folder_path.unwrap());
         println!("{:?}", repositories);
     });
 
