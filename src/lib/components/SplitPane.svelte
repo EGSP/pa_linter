@@ -1,14 +1,14 @@
-<script>
+<script lang="ts">
 	export let leftInitialSize = '50%';
 
-	let left;
+	let left: HTMLDivElement;
 	let isDragging = false;
 
 	function dragstart() {
 		isDragging = true;
 	}
 
-	function drag(e) {
+	function drag(e: { clientX: number; }) {
 		if (!isDragging) return;
 
 		const elementLeft = left.getBoundingClientRect().left;
