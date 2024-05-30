@@ -14,7 +14,7 @@ use walkdir::{DirEntry, WalkDir};
 use crate::{
     analyzers::json_analyzer::JsonAnalyzeTask,
     directory_image::{take_directory_image, DirectoryImage},
-    project::Project,
+    project::project::Project
 };
 
 mod analyzer;
@@ -44,6 +44,15 @@ fn main() {
     }
     let _ = PROJECT.set(project.unwrap());
     
+    tauri::api::dialog::FileDialogBuilder::new()
+    .set_title("Choose folder to scan for repositories/mods")
+    .pick_folder(|folder_path| {
+        if folder_path.is_none() {
+            return;
+        }
+        let repositories = project::repos::repository::find_repositories(&folder_path.unwrap());
+        println!("{:?}", repositories);
+    });
 
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![

@@ -3,7 +3,7 @@ use serde_json::{Map, Value};
 use crate::{
     analyzer::{AnalysisResult, Tip},
     nodes::NodeId,
-    project::Project,
+    project::project::Project,
 };
 
 pub struct JsonAnalyzeTask<'a> {
