@@ -6,7 +6,7 @@ use std::{cell::OnceCell, path::Path, process::Command, sync::OnceLock};
 
 use editor::EditorEnvironment;
 use nodes::{ArenaTree, Node, NodeId};
-use project::repos::repository;
+use project::repos::{self, repository::{self, add_repository, remove_repository, Repository}};
 use rand::Rng;
 use serde_json::{Map, Value};
 use tauri::api::file;
@@ -15,7 +15,8 @@ use walkdir::{DirEntry, WalkDir};
 use crate::{
     analyzers::json_analyzer::JsonAnalyzeTask,
     directory_image::{take_directory_image, DirectoryImage},
-    project::project::Project
+    project::project::Project,
+    project::repos::repository::{get_repositories}
 };
 
 mod analyzer;
@@ -40,11 +41,12 @@ fn main() {
     const PROJECT_TEST_FOLDER_PATH: &str =
         "c:/Workroot/softdev/pa_linter_test_tree/Consultant-Balance-main";
 
-    let project = Project::try_initilize_project(PROJECT_TEST_FOLDER_PATH);
-    if project.is_err() {
-        panic!("{}", project.err().unwrap());
-    }
-    let _ = PROJECT.set(project.unwrap());
+    // let project = Project::try_initilize_project(PROJECT_TEST_FOLDER_PATH);
+    // if project.is_err() {
+    //     println!("{}", project.as_ref().err().unwrap());
+    //     //panic!("{}", project.err().unwrap());
+    // }
+    // let _ = PROJECT.set(project.unwrap());
     
     tauri::api::dialog::FileDialogBuilder::new()
     .set_title("Choose folder to scan for repositories/mods")
@@ -62,10 +64,26 @@ fn main() {
             analyze_folder,
             get_project_folder_arena_tree,
             c_take_directory_image,
-            c_show_directory_images
+            c_show_directory_images,
+            c_get_repositories,
+            c_add_repository,
+            c_remove_repository,
+            c_reveal_in_explorer,
+            c_reveal_workspace_folder
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+#[tauri::command]
+fn c_reveal_in_explorer(path: &str) {
+    let _ = editor::reveal_in_explorer(Path::new(path));
+}
+
+#[tauri::command]
+fn c_reveal_workspace_folder(){
+    let editor_env = EDITOR_ENVIRONMENT.get().unwrap();
+    let _ = editor::reveal_in_explorer(editor_env.get_workspace_folder().unwrap().as_path());
 }
 
 #[tauri::command]
@@ -113,6 +131,23 @@ fn c_take_directory_image(folder_path: &Path) {
 fn c_show_directory_images() -> Vec<DirectoryImage> {
     let editor_env = EDITOR_ENVIRONMENT.get().unwrap();
     editor_env.get_directory_images()
+}
+
+#[tauri::command]
+fn c_get_repositories() -> Vec<Repository> {
+    get_repositories(&EDITOR_ENVIRONMENT.get().unwrap())
+}
+
+#[tauri::command]
+fn c_add_repository(folder_path: &Path) {
+    let editor_env = EDITOR_ENVIRONMENT.get().unwrap();
+    let _ = add_repository(folder_path,&editor_env);
+}
+
+#[tauri::command]
+fn c_remove_repository(repository_folder: &Path) {
+    let editor_env = EDITOR_ENVIRONMENT.get().unwrap();
+    let _ = remove_repository(repository_folder, &editor_env);
 }
 
 fn scan_project_folder(folder_path: &Path) -> Result<ArenaTree, String> {

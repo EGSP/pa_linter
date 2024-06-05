@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { ListBoxItem } from '@skeletonlabs/skeleton';
-	import type { DirectoryImage } from '../types';
+	import type { DirectoryImage } from '$lib/types';
 	import IconDirectoryImage from '$lib/icons/IconDirectoryImage.svelte';
 
 	export let directory_image: DirectoryImage;

@@ -30,3 +30,7 @@ export type DirectoryImage= {
     name: string,
     files: string[],
 }
+
+export type Repository={
+    folder_path: string
+}

@@ -32,11 +32,22 @@ impl EditorEnvironment{
         Ok(images_folder)
     }
 
+    pub fn get_or_create_folder(&self, folder_name : &str) -> Result<PathBuf,String>{
+        let folder = PathBuf::from(&self.get_workspace_folder().unwrap()).join(folder_name);
+        if !folder.exists(){
+            // create folder
+            if std::fs::create_dir(&folder).is_err() {
+                return Err(String::from("Could not create folder"));
+            }
+        }
+        Ok(folder)
+    }
+
     pub fn get_directory_images(&self) -> Vec<DirectoryImage>
     {
         let mut directory_images : Vec<DirectoryImage> = Vec::new();
         // read images folder to find json files
-        for entry in std::fs::read_dir(self.get_images_folder().unwrap()).unwrap() {
+        for entry in std::fs::read_dir(self.get_or_create_folder(IMAGES_FOLDER_NAME).unwrap()).unwrap() {
             let entry = entry.unwrap();
             if entry.file_name().to_str().unwrap().ends_with(".json"){
                 let file_content = std::fs::read_to_string(entry.path()).unwrap();
@@ -109,7 +120,7 @@ pub fn reveal_in_explorer(path: &Path)-> Result<(),String>{
         return Err(String::from("Path does not exist"));
     }
 
-    let command = Command::new("explorer")
+    let _ = Command::new("explorer")
         .arg(path) // <- Specify the directory you'd like to open.
         .spawn()
         .unwrap();

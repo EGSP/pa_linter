@@ -7,18 +7,21 @@
 	import IconExclamationTriangle from '$lib/icons/IconExclamationTriangle.svelte';
 
 	import IProjectArenaTree from '$lib/project/structure/IProjectArenaTree.svelte';
-	import IDirectoryImagesViewport from '$lib/directory_images/IDirectoryImagesViewport.svelte';
 	import IProjectViewport from '$lib/project/IProjectViewport.svelte';
 	import CarbonVolumeBlockStorage from '$lib/icons/CarbonVolumeBlockStorage.svelte';
 	import CarbonScanAlt from '$lib/icons/CarbonScanAlt.svelte';
 	import { onMount } from 'svelte';
 	import CarbonRepoSourceCode from '$lib/icons/CarbonRepoSourceCode.svelte';
+	import CarbonFolderOpen from '$lib/icons/CarbonFolderOpen.svelte';
 	import Frame from '$lib/components/Frame.svelte';
+	import IConfigurationViewport from '$lib/configuration/IConfigurationViewport.svelte';
 
 	let active_viewport: string = 'project';
+	const configuration_viewport_name = 'configuration';
+	const project_viewport_name = 'project';
 
 	let ini_project_viewport = false;
-	let ini_directory_images_viewport = false;
+	let ini_configuration_viewport = false;
 
 	async function take_directory_image() {
 		let path;
@@ -45,21 +48,25 @@
 			ini_project_viewport = true;
 			console.log('ini_project_viewport: ' + ini_project_viewport);
 		}
-		active_viewport = 'project';
+		active_viewport = project_viewport_name;
 		console.log('active_viewport: ' + active_viewport);
 	}
 
 	// let directory_images: DirectoryImage[] = [];
-	async function show_directory_images() {
+	async function show_configuration() {
 		// directory_images = await invoke('c_show_directory_images');
-		if (ini_directory_images_viewport == false) {
-			ini_directory_images_viewport = true;
-			console.log('ini_directory_images_viewport: ' + ini_directory_images_viewport);
+		if (ini_configuration_viewport == false) {
+			ini_configuration_viewport = true;
+			console.log('ini_configuration_viewport: ' + ini_configuration_viewport);
 		}
 
-		active_viewport = 'directory_images';
+		active_viewport = configuration_viewport_name;
 
 		console.log('active_viewport: ' + active_viewport);
+	}
+
+	async function reveal_workspace_folder(){
+		await invoke('c_reveal_workspace_folder');
 	}
 </script>
 
@@ -68,32 +75,33 @@
 		<button type="button" class=" btn" on:click={show_project}>
 			<CarbonRepoSourceCode class="size-6" />
 		</button>
-		<button type="button" class=" btn" on:click={show_directory_images}>
+		<button type="button" class=" btn" on:click={show_configuration}>
 			<CarbonVolumeBlockStorage class="size-6" />
 		</button>
 		<button type="button" class=" btn" on:click={take_directory_image} id="button">
 			<CarbonScanAlt class="size-6" />
 		</button>
+		<button type="button" class=" btn" on:click={reveal_workspace_folder}>
+			<CarbonFolderOpen class="size-6" />
+		</button>
+	
 		<!-- <button type="button" class="variant-filled btn" on:click={analyze} id="button">Analyze</button>
 		<button type="button" class="variant-filled btn" on:click={analyze_tree} id="button"
 			>Analyze tree</button
 		>
 		
-		<button type="button" class="variant-filled btn" on:click={show_directory_images} id="button"
+		<button type="button" class="variant-filled btn" on:click={show_configuration} id="button"
 			>Show images</button
 		> -->
 	</div>
 	<div id="workspace" class="workspace bg-surface-100">
-		<div
-			id="directory-images-viewport"
-			style:display={active_viewport === 'directory_images' ? null : 'none'}
-		>
-			{#if ini_directory_images_viewport}
-				<IDirectoryImagesViewport />
+		<Frame display={active_viewport === configuration_viewport_name ? null : 'none'}>
+			{#if ini_configuration_viewport}
+				<IConfigurationViewport />
 			{/if}
-		</div>
+		</Frame>
 
-		<Frame display={active_viewport === 'project' ? null : 'none'} direction={'row'}>
+		<Frame display={active_viewport === project_viewport_name ? null : 'none'}>
 			{#if ini_project_viewport}
 				<IProjectViewport />
 			{/if}
@@ -108,7 +116,7 @@
 			<button type="button" class="variant-filled btn" on:click={take_directory_image} id="button"
 				>Take image</button
 			>
-			<button type="button" class="variant-filled btn" on:click={show_directory_images} id="button"
+			<button type="button" class="variant-filled btn" on:click={show_configuration} id="button"
 				>Show images</button
 			>
 		</div> -->

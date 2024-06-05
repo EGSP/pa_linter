@@ -1,4 +1,4 @@
-<script lang="ts">
+<!-- <script lang="ts">
 	import type { DirectoryImage } from '$lib/types';
     import IDirectoryImages from './IDirectoryImages.svelte';
 	import { invoke } from '@tauri-apps/api';
@@ -17,5 +17,7 @@
 	{#if directory_images && directory_images.length > 0}
 		<div>DIRECTORY IMAGES:</div>
 		<IDirectoryImages {directory_images} />
+	{:else}
+		<div>NO DIRECTORY IMAGES</div>
 	{/if}
-</div>
+</div> -->
