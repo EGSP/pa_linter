@@ -10,6 +10,7 @@
 	import { onMount } from 'svelte';
 
 	import CarbonAddAlt from '$lib/icons/CarbonAddAlt.svelte';
+    import TdesignRefresh from '$lib/icons/TdesignRefresh.svelte';
 
     let selected_value: string = 'value not selected';
 
@@ -52,6 +53,13 @@
 			size="small"
 			icon={CarbonAddAlt}
 			iconDescription="Add repository"
+		/>
+        <Button
+			on:click={get_repositories}
+			kind="secondary"
+			size="small"
+			icon={TdesignRefresh}
+			iconDescription="Refresh repositories"
 		/>
     </div>
 	{#if repositories && repositories.length > 0}
