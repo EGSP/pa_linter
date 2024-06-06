@@ -1,4 +1,4 @@
-<script lang="ts">
+<!-- <script lang="ts">
 	import { TreeView } from '@skeletonlabs/skeleton';
 	import { Node, type ArenaTree } from '$lib/types';
 	import IProjectArenaTreeItem from '$lib/project/structure/IProjectArenaTreeItem.svelte';
@@ -17,4 +17,4 @@
 	{:else}
 		<p>No nodes</p>
 	{/if}
-</TreeView>
+</TreeView> -->

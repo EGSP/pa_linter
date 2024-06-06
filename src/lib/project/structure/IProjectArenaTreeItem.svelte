@@ -1,4 +1,4 @@
-<script lang="ts">
+<!-- <script lang="ts">
 	import { TreeViewItem } from '@skeletonlabs/skeleton';
 	import type { ArenaTree, Node } from "$lib/types";
     import IProjectArenaTreeItem from './IProjectArenaTreeItem.svelte';
@@ -38,4 +38,4 @@
 		{/if}
 	</svelte:fragment>
 </TreeViewItem>
-
+ -->

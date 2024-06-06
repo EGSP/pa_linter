@@ -2,7 +2,6 @@
 	import { invoke } from '@tauri-apps/api/tauri';
 	import { open } from '@tauri-apps/api/dialog';
 	import IAnalysisResult from '../lib/project/analyze/IAnalysisResult.svelte';
-	import { ArenaTree, Node, type AnalysisResult, type DirectoryImage } from '../lib/types';
 	import { Accordion, AccordionItem, ListBox, ListBoxItem } from '@skeletonlabs/skeleton';
 	import IconExclamationTriangle from '$lib/icons/IconExclamationTriangle.svelte';
 

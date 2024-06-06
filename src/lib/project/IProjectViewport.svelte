@@ -1,6 +1,6 @@
 <script lang="ts">
 	import IconExclamationTriangle from '$lib/icons/IconExclamationTriangle.svelte';
-	import { ArenaTree, Node, type AnalysisResult } from '$lib/types';
+	import { type AnalysisResult, type RepositoryTree } from '$lib/types';
 	import { Accordion, AccordionItem, TreeView } from 'carbon-components-svelte';
 	import { invoke } from '@tauri-apps/api';
 	import IAnalysisResult from './analyze/IAnalysisResult.svelte';
@@ -17,6 +17,7 @@
 
 	let analysis_results = new Array<AnalysisResult>();
 	async function analyze() {
+		return;
 		analysis_results = await invoke<AnalysisResult[]>('analyze_folder', {
 			folderPath: 'c:/Workroot/softdev/pa_linter_test'
 		});
@@ -24,101 +25,81 @@
 		console.log(analysis_results);
 	}
 
-	let project_arena_tree: ArenaTree;
-	async function analyze_tree() {
-		let arena_tree_corrupted: ArenaTree;
-		arena_tree_corrupted = await invoke<ArenaTree>('get_project_folder_arena_tree', {
-			folderPath: 'c:/Workroot/softdev/pa_linter_test_tree/Consultant-Balance-main'
-		});
-		project_arena_tree = new ArenaTree();
-
-		// Конвертирую корявый объект в типизированный.
-		let nodes_array = arena_tree_corrupted['nodes_map'] as unknown as Array<Node>;
-		let nodes_map = new Map<string, Node>();
-		for (let i in nodes_array) {
-			nodes_map.set(nodes_array[i].id.toString(), nodes_array[i]);
-		}
-		project_arena_tree.nodes_map = nodes_map;
-	}
-
-	let project_tree_nested: TreeNode[] = [];
+	let project_tree: TreeNode[] = [];
 	async function get_project_tree() {
-		let arena_tree_corrupted: ArenaTree;
-		arena_tree_corrupted = await invoke<ArenaTree>('get_project_folder_arena_tree', {
-			folderPath: 'c:/Workroot/softdev/pa_linter_test_tree/Consultant-Balance-main'
-		});
-		let nodes_array = arena_tree_corrupted['nodes_map'] as unknown as Array<Node>;
 
-		project_tree_nested = new Array<TreeNode>();
+		let trees = await invoke<RepositoryTree[]>('c_get_project_trees')
+		console.log(trees);
+		// let arena_tree_corrupted: ArenaTree;
+		// arena_tree_corrupted = await invoke<ArenaTree>('get_project_folder_arena_tree', {
+		// 	folderPath: 'c:/Workroot/softdev/pa_linter_test_tree/Consultant-Balance-main'
+		// });
+		// let nodes_array = arena_tree_corrupted['nodes_map'] as unknown as Array<Node>;
 
-		let nodes_map = new Map<string, Node>();
-		for (let i in nodes_array) {
-			nodes_map.set(nodes_array[i].id.toString(), nodes_array[i]);
-		}
+		// project_tree = new Array<TreeNode>();
 
-		let root_node = nodes_map.get('0');
+		// let nodes_map = new Map<string, Node>();
+		// for (let i in nodes_array) {
+		// 	nodes_map.set(nodes_array[i].id.toString(), nodes_array[i]);
+		// }
 
-		if (root_node) {
-			project_tree_nested.push({
-				id: root_node.id.toString(),
-				text: root_node.value,
-				children: get_children(root_node.id.toString())
-			});
-		}
+		// let root_node = nodes_map.get('0');
 
-		function get_children(node_id: string) {
-			let arena_node = nodes_map.get(node_id);
-			let children = new Array<TreeNode>();
-			if (arena_node) {
-				for (let child_id of arena_node.children) {
-					let child_node = nodes_map.get(child_id.toString());
-					if (child_node) {
-						children.push({
-							id: child_node.id.toString(),
-							text: child_node.value,
-							children: get_children(child_node.id.toString())
-						});
-					}
-				}
-			}
+		// if (root_node) {
+		// 	project_tree.push({
+		// 		id: root_node.id.toString(),
+		// 		text: root_node.value,
+		// 		children: get_children(root_node.id.toString())
+		// 	});
+		// }
 
-			return children;
-		}
+		// function get_children(node_id: string) {
+		// 	let arena_node = nodes_map.get(node_id);
+		// 	let children = new Array<TreeNode>();
+		// 	if (arena_node) {
+		// 		for (let child_id of arena_node.children) {
+		// 			let child_node = nodes_map.get(child_id.toString());
+		// 			if (child_node) {
+		// 				children.push({
+		// 					id: child_node.id.toString(),
+		// 					text: child_node.value,
+		// 					children: get_children(child_node.id.toString())
+		// 				});
+		// 			}
+		// 		}
+		// 	}
+
+		// 	return children;
+		// }
 	}
 
 	onMount(async () => {
 		await get_project_tree();
-		await analyze_tree();
+		// await analyze_tree();
 	});
 </script>
 
 <Frame>
-	<Splitpanes>
+	<Splitpanes >
 		<Pane>
 			<Frame direction={'column'}>
 				<div class="action-bar">
 					<Button
 						on:click={analyze}
-						kind="secondary"
+						kind="primary"
 						size="small"
 						icon={CarbonRun}
 						iconDescription="Analyze project folder"
+						tooltipPosition="right"
+						tooltipAlignment="end"
 					/>
 				</div>
 
 				<div class="project-tree" id="project-tree">
-					{#if project_arena_tree}
-						<div>Arena Length Top: {project_arena_tree?.nodes_map.size}</div>
-						<IProjectArenaTree
-							{project_arena_tree}
-							project_arena_tree_length={project_arena_tree.nodes_map.size}
-						/>
-					{/if}
-
-					{#if project_tree_nested}
+					{#if project_tree}
 						<TreeView
 							labelText="Project Tree"
-							children={project_tree_nested}
+							children={project_tree}
 							style="overflow:unset"
 						/>
 					{/if}

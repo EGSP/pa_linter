@@ -2,12 +2,12 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use core::panic;
-use std::{cell::OnceCell, path::Path, process::Command, sync::OnceLock};
+use std::{cell::OnceCell, path::{Path, PathBuf}, process::Command, sync::OnceLock};
 
 use directory_image::{get_directory_images, save_directory_image};
 use editor::EditorEnvironment;
 use nodes::{ArenaTree, Node, NodeId};
-use project::repos::{self, repository::{self, add_repository, get_repository_info, remove_repository, Repository, RepositoryInfo}};
+use project::repos::{self, repository::{self, add_repository, get_repository_info, remove_repository, Repository, RepositoryInfo}, repository_tree::{build_repository_tree, RepositoryTree}};
 use rand::Rng;
 use serde_json::{Map, Value};
 use tauri::api::file;
@@ -69,6 +69,7 @@ fn main() {
             c_get_repositories,
             c_add_repository,
             c_remove_repository,
+            c_get_project_trees,
             c_reveal_in_explorer,
             c_reveal_workspace_folder
         ])
@@ -104,6 +105,22 @@ fn get_project_folder_arena_tree(folder_path: &Path) -> Result<ArenaTree, String
     let serialized = serde_json::to_string(&arena_tree).unwrap();
     println!("{}", serialized);
     Ok(arena_tree)
+}
+
+#[tauri::command]
+fn c_get_project_trees() -> Vec<RepositoryTree> {
+    let repositories = get_repositories(&EDITOR_ENVIRONMENT.get().unwrap());
+
+    let mut trees:Vec<RepositoryTree> = Vec::new();
+
+    for repository in repositories {
+        // let path_buf = PathBuf::from(repository.folder_path);
+        let path = Path::new(&repository.folder_path);
+        let tree = build_repository_tree(path);
+        trees.push(tree);
+    }
+
+    trees
 }
 
 #[tauri::command]
