@@ -1,6 +1,7 @@
 use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use walkdir::WalkDir;
 
 use crate::{
@@ -157,4 +158,26 @@ pub fn get_repositories(editor:&EditorEnvironment) -> Vec<Repository>{
     }
 
     repositories
+}
+
+// 0000000000000000000000000000000000000000000000000000000000
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct RepositoryInfo {
+    pub folder_path: String,
+    pub mod_name: String,
+}
+
+impl RepositoryInfo {
+    pub fn new(folder_path: String, mod_name: String) -> Self {
+        Self { folder_path, mod_name }
+    }
+}
+
+pub fn get_repository_info(repository:&Repository) -> RepositoryInfo{
+    // read modinfo.json and get "identifier" field
+    let modinfo_file_path = repository.get_modinfo_file_path();
+    let file_content = std::fs::read_to_string(modinfo_file_path).unwrap();
+    let modinfo: Value = serde_json::from_str(&file_content).unwrap();
+    RepositoryInfo::new(repository.folder_path.clone(), modinfo["identifier"].to_string())
 }

@@ -34,3 +34,8 @@ export type DirectoryImage= {
 export type Repository={
     folder_path: string
 }
+
+export type RepositoryInfo = {
+    folder_path: string,
+    mod_name: string
+}

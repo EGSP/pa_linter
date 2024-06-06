@@ -23,25 +23,7 @@
 	let ini_project_viewport = false;
 	let ini_configuration_viewport = false;
 
-	async function take_directory_image() {
-		let path;
-
-		const selected = await open({
-			directory: true,
-			multiple: false
-		});
-
-		if (!selected) {
-			return;
-		}
-
-		path = selected;
-		console.log('Selected path: ' + path);
-
-		await invoke('c_take_directory_image', {
-			folderPath: path
-		});
-	}
+	
 
 	async function show_project() {
 		if (ini_project_viewport == false) {
@@ -52,16 +34,12 @@
 		console.log('active_viewport: ' + active_viewport);
 	}
 
-	// let directory_images: DirectoryImage[] = [];
 	async function show_configuration() {
-		// directory_images = await invoke('c_show_directory_images');
 		if (ini_configuration_viewport == false) {
 			ini_configuration_viewport = true;
 			console.log('ini_configuration_viewport: ' + ini_configuration_viewport);
 		}
-
 		active_viewport = configuration_viewport_name;
-
 		console.log('active_viewport: ' + active_viewport);
 	}
 
@@ -77,9 +55,6 @@
 		</button>
 		<button type="button" class=" btn" on:click={show_configuration}>
 			<CarbonVolumeBlockStorage class="size-6" />
-		</button>
-		<button type="button" class=" btn" on:click={take_directory_image} id="button">
-			<CarbonScanAlt class="size-6" />
 		</button>
 		<button type="button" class=" btn" on:click={reveal_workspace_folder}>
 			<CarbonFolderOpen class="size-6" />

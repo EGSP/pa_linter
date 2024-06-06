@@ -4,9 +4,10 @@
 use core::panic;
 use std::{cell::OnceCell, path::Path, process::Command, sync::OnceLock};
 
+use directory_image::{get_directory_images, save_directory_image};
 use editor::EditorEnvironment;
 use nodes::{ArenaTree, Node, NodeId};
-use project::repos::{self, repository::{self, add_repository, remove_repository, Repository}};
+use project::repos::{self, repository::{self, add_repository, get_repository_info, remove_repository, Repository, RepositoryInfo}};
 use rand::Rng;
 use serde_json::{Map, Value};
 use tauri::api::file;
@@ -48,15 +49,15 @@ fn main() {
     // }
     // let _ = PROJECT.set(project.unwrap());
     
-    tauri::api::dialog::FileDialogBuilder::new()
-    .set_title("Choose folder to scan for repositories/mods")
-    .pick_folder(|folder_path| {
-        if folder_path.is_none() {
-            return;
-        }
-        let repositories = repository::find_repositories(&folder_path.unwrap());
-        println!("{:?}", repositories);
-    });
+    // tauri::api::dialog::FileDialogBuilder::new()
+    // .set_title("Choose folder to scan for repositories/mods")
+    // .pick_folder(|folder_path| {
+    //     if folder_path.is_none() {
+    //         return;
+    //     }
+    //     let repositories = repository::find_repositories(&folder_path.unwrap());
+    //     println!("{:?}", repositories);
+    // });
 
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
@@ -64,7 +65,7 @@ fn main() {
             analyze_folder,
             get_project_folder_arena_tree,
             c_take_directory_image,
-            c_show_directory_images,
+            c_get_directory_images,
             c_get_repositories,
             c_add_repository,
             c_remove_repository,
@@ -108,34 +109,21 @@ fn get_project_folder_arena_tree(folder_path: &Path) -> Result<ArenaTree, String
 #[tauri::command]
 fn c_take_directory_image(folder_path: &Path) {
     let image = take_directory_image(folder_path.to_str().unwrap());
-
-    let serialized = serde_json::to_string(&image).unwrap();
-    let closure_serialized = serialized.clone();
-    tauri::api::dialog::FileDialogBuilder::new()
-        .set_title("Save Directory Image")
-        .set_file_name("directory_image.json")
-        .save_file(move |file_path| {
-            if file_path.is_some() {
-                let file_path = file_path.unwrap();
-                let file_directory = file_path.parent().unwrap();
-                std::fs::write(&file_path, closure_serialized)
-                    .expect("Failed to write to file");
-                
-                let _ = editor::reveal_in_explorer(file_directory);
-            }
-        });
-    println!("{}", serialized);
+    save_directory_image(&image, EDITOR_ENVIRONMENT.get().unwrap());
 }
 
 #[tauri::command]
-fn c_show_directory_images() -> Vec<DirectoryImage> {
-    let editor_env = EDITOR_ENVIRONMENT.get().unwrap();
-    editor_env.get_directory_images()
+fn c_get_directory_images() -> Vec<DirectoryImage> {
+    get_directory_images(EDITOR_ENVIRONMENT.get().unwrap())
 }
 
 #[tauri::command]
-fn c_get_repositories() -> Vec<Repository> {
-    get_repositories(&EDITOR_ENVIRONMENT.get().unwrap())
+fn c_get_repositories() -> Vec<RepositoryInfo> {
+    let repositories = get_repositories(&EDITOR_ENVIRONMENT.get().unwrap())
+    .into_iter()
+    .map(|repository| get_repository_info(&repository))
+    .collect();
+    repositories
 }
 
 #[tauri::command]
@@ -167,26 +155,7 @@ fn scan_project_folder(folder_path: &Path) -> Result<ArenaTree, String> {
     Ok(arena_tree)
 }
 
-fn build_node_path_from_arena_tree(arena_tree: &ArenaTree, node_id: i32) -> Vec<String> {
-    let mut node = arena_tree.get_node_by_id(node_id).unwrap();
 
-    let mut paths: Vec<String> = Vec::new();
-    paths.push(node.value.clone());
-
-    while node.parent.is_some() {
-        node = arena_tree.get_node_by_id(node.parent.unwrap()).unwrap();
-        paths.push(node.value.clone());
-    }
-
-    paths.reverse();
-    paths
-}
-
-fn get_random_node_from_arena_tree(arena_tree: &ArenaTree) -> i32 {
-    let nodes = arena_tree.get_nodes_all();
-    let random_index = rand::thread_rng().gen_range(0..nodes.len());
-    nodes[random_index].id
-}
 
 fn iterate_directory(folder_path: &Path, previous_node: &Option<i32>, arena_tree: &mut ArenaTree) {
     let folder_node: Node = Node::new(get_path_name(folder_path), String::from(""));
