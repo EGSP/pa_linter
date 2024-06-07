@@ -28,6 +28,8 @@ export type RepositoryInfo = {
 
 export type RepositoryTree={
     entries: RepositoryTreeEntry[],
+
+    repository_info: RepositoryInfo
 }
 
 export type RepositoryTreeEntry = {

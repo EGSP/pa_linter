@@ -1,13 +1,15 @@
 <script lang="ts">
 	import IconExclamationTriangle from '$lib/icons/IconExclamationTriangle.svelte';
-	import { type AnalysisResult, type RepositoryTree } from '$lib/types';
+	import { type AnalysisResult, type RepositoryTree, type RepositoryTreeEntry } from '$lib/types';
 	import { Accordion, AccordionItem, TreeView } from 'carbon-components-svelte';
 	import { invoke } from '@tauri-apps/api';
 	import IAnalysisResult from './analyze/IAnalysisResult.svelte';
 	import IProjectArenaTree from './structure/IProjectArenaTree.svelte';
-	import { onMount } from 'svelte';
+	import { SvelteComponent, onMount } from 'svelte';
 	import Frame from '$lib/components/Frame.svelte';
 	import CarbonRun from '$lib/icons/CarbonRun.svelte';
+	import TdesignRefresh from '$lib/icons/TdesignRefresh.svelte';
+	import VscodeIconsFileTypeJson from '$lib/icons/files/VscodeIconsFileTypeJson.svelte';
 
 	import { Button } from 'carbon-components-svelte';
 	import Label from '$lib/components/Label.svelte';
@@ -25,52 +27,156 @@
 		console.log(analysis_results);
 	}
 
-	let project_tree: TreeNode[] = [];
+	let repository_node_trees: Array<TreeNode[]> = [];
+	let repository_node_trees_names: Array<string> = [];
+	// added this boolean cause array lenght condition didnt work for some reason
+	let tree_view_ini:boolean = false;
 	async function get_project_tree() {
+		tree_view_ini = false;
+		repository_node_trees = [];
+		repository_node_trees_names = [];
+		
 
-		let trees = await invoke<RepositoryTree[]>('c_get_project_trees')
-		console.log(trees);
-		// let arena_tree_corrupted: ArenaTree;
-		// arena_tree_corrupted = await invoke<ArenaTree>('get_project_folder_arena_tree', {
-		// 	folderPath: 'c:/Workroot/softdev/pa_linter_test_tree/Consultant-Balance-main'
-		// });
-		// let nodes_array = arena_tree_corrupted['nodes_map'] as unknown as Array<Node>;
+		console.log('get_project_tree');
+		let repository_trees = await invoke<RepositoryTree[]>('c_get_project_trees');
+		// console.log(repository_trees);
 
-		// project_tree = new Array<TreeNode>();
+		for (let repository_tree of repository_trees) {
+			console.log('Building tree for ' + repository_tree.repository_info.mod_name);
+			// console.log(repository_tree.entries);
+			let nodes_tree = new Array<TreeNode>();
 
-		// let nodes_map = new Map<string, Node>();
-		// for (let i in nodes_array) {
-		// 	nodes_map.set(nodes_array[i].id.toString(), nodes_array[i]);
-		// }
+			for (let repository_entry of repository_tree.entries) {
+				build_node(repository_entry);
 
-		// let root_node = nodes_map.get('0');
+				function find_node_in_tree(id: string): TreeNode | null {
+					for (let node of nodes_tree) {
+						if (node.id == id) {
+							return node;
+						}
 
-		// if (root_node) {
-		// 	project_tree.push({
-		// 		id: root_node.id.toString(),
-		// 		text: root_node.value,
-		// 		children: get_children(root_node.id.toString())
-		// 	});
-		// }
+						let found = find_node_in_tree_node(node);
+						if (found != null) {
+							return found;
+						}
+					}
 
-		// function get_children(node_id: string) {
-		// 	let arena_node = nodes_map.get(node_id);
-		// 	let children = new Array<TreeNode>();
-		// 	if (arena_node) {
-		// 		for (let child_id of arena_node.children) {
-		// 			let child_node = nodes_map.get(child_id.toString());
-		// 			if (child_node) {
-		// 				children.push({
-		// 					id: child_node.id.toString(),
-		// 					text: child_node.value,
-		// 					children: get_children(child_node.id.toString())
-		// 				});
-		// 			}
-		// 		}
-		// 	}
+					function find_node_in_tree_node(node: TreeNode): TreeNode | null {
+						if (node.children == null) {
+							return null;
+						}
+						for (let child of node.children!) {
+							if (child.id == id) {
+								return child;
+							} else {
+								let found = find_node_in_tree_node(child);
+								if (found != null) {
+									return found;
+								}
+							}
+						}
+						return null;
+					}
 
-		// 	return children;
-		// }
+					return null;
+				}
+
+				function build_node(repository_entry: RepositoryTreeEntry): TreeNode {
+					let same_node_in_project_tree = find_node_in_tree(repository_entry.id.toString());
+
+					// another nodes could create that node while constructing parent tree
+					if (same_node_in_project_tree != null) {
+						// console.log('Node %d already in project tree', same_node_in_project_tree.id);
+						return same_node_in_project_tree;
+					} else {
+						let text = repository_entry.path.split('\\').pop();
+						let node = {
+							id: repository_entry.id.toString(),
+							text,
+							children: repository_entry.children.length > 0 ? new Array<TreeNode>() : undefined
+						};
+						console.log(repository_entry)
+						console.log(node);
+
+						// console.log('Adding node %d to project tree', node.id);
+						add_to_parent_or_root(node, repository_entry);
+						return node;
+					}
+				}
+
+				function add_to_parent_or_root(new_node: TreeNode, repository_entry: RepositoryTreeEntry) {
+					if (repository_entry.parent == null) {
+						// push root node
+						// console.log('Adding root node %d to project tree root', new_node.id);
+						nodes_tree.push(new_node);
+					} else {
+						// find parent node in project tree
+						// console.log('Look for parent %d for node %d', repository_entry.parent, new_node.id);
+						let parent_node_in_project_tree = find_node_in_tree(repository_entry.parent.toString());
+
+						if (parent_node_in_project_tree != null) {
+							// console.log(
+							// 	'Get parent %d for node %d',
+							// 	parent_node_in_project_tree?.id,
+							// 	new_node.id
+							// );
+							// console.log(
+							// 	'same parent %d for node %d, and repository node`s %d parent is %d',
+							// 	parent_node_in_project_tree.id,
+							// 	new_node.id,
+							// 	repository_entry.id,
+							// 	repository_entry.parent
+							// );
+
+							// console.log('Add node %d to parent %d', new_node.id, parent_node_in_project_tree.id);
+							
+							if(parent_node_in_project_tree.children == null){
+								console.log('children is undefined for node %d', parent_node_in_project_tree.id);
+							}
+							parent_node_in_project_tree!.children!.push(new_node);
+						} else {
+							// console.log('Find repository_entry.parent %d in repository_tree', repository_entry.parent);
+							// creating parent node in project tree
+							let repository_entry_parent = repository_tree.entries.find(
+								(entry) => entry.id === repository_entry.parent
+							);
+							// console.log(
+							// 	'No parent in project tree for node %d . Building node %d',
+							// 	new_node.id,
+							// 	repository_entry_parent?.id
+							// );
+							let parent_node = build_node(repository_entry_parent!);
+							parent_node.children!.push(new_node);
+						}
+					}
+				}
+			}
+
+			console.log(nodes_tree);
+			repository_node_trees.push(nodes_tree);
+			repository_node_trees_names.push(repository_tree.repository_info.mod_name);
+		}
+		
+		// console.log('repository_node_trees');
+		// console.log(repository_node_trees);
+		// console.log(repository_node_trees.length)
+
+		tree_view_ini = true;
+
+		function get_icon_for_file(file_name: string): SvelteComponent<any> | undefined {
+			// select icon based on file extension
+			let file_extension = file_name.split('.').pop();
+			switch (file_extension) {
+				case 'json': return ;
+				// TODO: ДОБАВИТЬ РЕАЛИЗАЦИЮ ИКОНОК. НЕ СДЕЛАЛ С САМОГО НАЧАЛА, ПОТОМУ ЧТО ИКОНКИ НУЖНО ОБОРАЧИВАТЬ В КОМПОНЕНТ ПОДХОДЯЩИЙ
+				// directory
+				case undefined: ;
+				// common file
+				default: ;
+			}
+
+			return undefined;
+		}
 	}
 
 	onMount(async () => {
@@ -80,10 +186,19 @@
 </script>
 
 <Frame>
-	<Splitpanes >
+	<Splitpanes>
 		<Pane>
 			<Frame direction={'column'}>
 				<div class="action-bar">
+					<Button
+						on:click={get_project_tree}
+						kind="secondary"
+						size="small"
+						icon={TdesignRefresh}
+						iconDescription="Refresh project tree"
+						tooltipPosition="right"
+						tooltipAlignment="end"
+					/>
 					<Button
 						on:click={analyze}
 						kind="primary"
@@ -96,12 +211,13 @@
 				</div>
 
 				<div class="project-tree" id="project-tree">
-					{#if project_tree}
-						<TreeView
-							labelText="Project Tree"
-							children={project_tree}
-							style="overflow:unset"
-						/>
+					{#if tree_view_ini}
+						{#each repository_node_trees as nodes_tree, i}
+							<Label text={repository_node_trees_names[i]} />
+							<TreeView labelText="Project Tree" children={nodes_tree} style="overflow:unset" size="compact" />
+						{/each}
+					{:else}
+						<p>No Trees</p>
 					{/if}
 				</div>
 			</Frame>
@@ -114,7 +230,7 @@
 							<AccordionItem>
 								<svelte:fragment slot="title">
 									<div class="flex">
-										<IconExclamationTriangle/>
+										<IconExclamationTriangle />
 										<!-- {result.file_path} -->
 										<Label text={result.file_path} />
 									</div>

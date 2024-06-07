@@ -3,6 +3,8 @@ use std::{collections::HashMap, path::Path};
 use serde::{Deserialize, Serialize};
 use walkdir::WalkDir;
 
+use super::repository::{Repository, RepositoryInfo};
+
 #[derive(Debug, Serialize, Deserialize, Hash, PartialEq, Eq, Copy, Clone)]
 pub struct EntryID(i32);
 
@@ -30,13 +32,16 @@ impl RepositoryTreeEntry {
 pub struct RepositoryTree {
     pub entries: Vec<RepositoryTreeEntry>,
     pub last_generated_id: EntryID,
+
+    pub repository_info: RepositoryInfo,
 }
 
 impl RepositoryTree {
-    pub fn new() -> Self {
+    pub fn new(repository_info: RepositoryInfo) -> Self {
         Self {
             entries: Vec::new(),
             last_generated_id: EntryID(0),
+            repository_info
         }
     }
 
@@ -49,12 +54,21 @@ impl RepositoryTree {
         let id = self.generate_id();
         entry.id = id;
         self.entries.push(entry.clone());
+        // add entry to parent children
+        if let Some(parent_id) = entry.parent {
+            self.entries
+                .iter_mut()
+                .find(|entry| entry.id == parent_id)
+                .unwrap()
+                .children
+                .push(id);
+        }
     }
 }
 
-pub fn build_repository_tree(folder_path: &Path) -> RepositoryTree {
-    let mut repository_tree = RepositoryTree::new();
-    build_repository_tree_recursive(None, folder_path, &mut repository_tree);
+pub fn build_repository_tree(repository: &Repository) -> RepositoryTree {
+    let mut repository_tree = RepositoryTree::new(RepositoryInfo::from(repository.clone()));
+    build_repository_tree_recursive(None, Path::new(&repository.folder_path), &mut repository_tree);
 
     repository_tree
 }

@@ -9,7 +9,7 @@ use crate::{
 };
 
 /// Репозиторий представляет собой папку с модом
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Repository {
     /// Path to modinfo.json folder
     pub folder_path: String,
@@ -26,71 +26,6 @@ impl Repository {
 }
 
 const REPOSITORIES_FOLDER_NAME : &str = "repositories";
-
-pub struct RepositoryComputed {
-    pub repository: Repository,
-    pub tree: Option<ArenaTree>,
-}
-
-impl RepositoryComputed {
-    pub fn new(repository: Repository, tree: Option<ArenaTree>) -> Self {
-        Self { repository, tree }
-    }
-
-    pub fn ini(&mut self) -> Result<(), String> {
-
-        let mut tree = self.tree.as_mut().unwrap();
-        Self::build_arena_tree(
-            &PathBuf::from(&self.repository.folder_path),
-            &None,
-            &mut tree,
-        );
-        Ok(())
-    }
-
-    fn build_arena_tree(
-        folder_path: &PathBuf,
-        previous_node: &Option<i32>,
-        arena_tree: &mut ArenaTree,
-    ) {
-        let folder_node: Node = Node::new(get_path_name(folder_path), String::from(""));
-        let folder_node_id: i32;
-
-        if previous_node.is_none() {
-            if arena_tree.get_root_node().is_none() {
-                folder_node_id = arena_tree.add_root_node(folder_node);
-            } else {
-                // корневые ноды можно определять по наличию родителя - можно сделать когда-нибудь.
-                // folder_node_id = arena_tree.add_node(folder_node);
-                panic!("Root node already exists in arena tree");
-            }
-        } else {
-            folder_node_id = arena_tree.add_node_to_parent_id(previous_node.unwrap(), folder_node);
-        }
-
-        // iterate directory entries and build arena tree
-        for entry in WalkDir::new(folder_path.to_str().unwrap())
-            .min_depth(1)
-            .max_depth(1)
-        {
-            let entry = entry.unwrap();
-            let entry_name = entry.file_name().to_str().unwrap();
-            let entry_path = folder_path.join(entry_name);
-
-            println!("{} + {}", folder_path.to_str().unwrap(), entry_name);
-            println!(" ");
-
-            if entry.file_type().is_dir() {
-                Self::build_arena_tree(&entry_path, &Some(folder_node_id), arena_tree);
-            } else if entry.file_type().is_file() {
-                let file_node = Node::new(entry_name.to_string(), String::from(""));
-                arena_tree.add_node_to_parent_id(folder_node_id, file_node);
-            } else {
-                // do nothing
-            }
-        }
-    }
-}
 
 pub fn find_repositories(folder: &PathBuf) -> Vec<Repository> {
     let mut repositories: Vec<Repository> = Vec::new();
@@ -162,7 +97,7 @@ pub fn get_repositories(editor:&EditorEnvironment) -> Vec<Repository>{
 
 // 0000000000000000000000000000000000000000000000000000000000
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug,Clone)]
 pub struct RepositoryInfo {
     pub folder_path: String,
     pub mod_name: String,
@@ -174,10 +109,16 @@ impl RepositoryInfo {
     }
 }
 
-pub fn get_repository_info(repository:&Repository) -> RepositoryInfo{
+impl From<Repository> for RepositoryInfo {
+    fn from(repository:Repository)->RepositoryInfo{
+        get_repository_info(&repository)
+    }
+}
+
+fn get_repository_info(repository:&Repository) -> RepositoryInfo{
     // read modinfo.json and get "identifier" field
     let modinfo_file_path = repository.get_modinfo_file_path();
     let file_content = std::fs::read_to_string(modinfo_file_path).unwrap();
     let modinfo: Value = serde_json::from_str(&file_content).unwrap();
-    RepositoryInfo::new(repository.folder_path.clone(), modinfo["identifier"].to_string())
+    RepositoryInfo::new(repository.folder_path.clone(), modinfo["identifier"].to_string().replace('"', ""))
 }

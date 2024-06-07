@@ -7,14 +7,12 @@ use std::{cell::OnceCell, path::{Path, PathBuf}, process::Command, sync::OnceLoc
 use directory_image::{get_directory_images, save_directory_image};
 use editor::EditorEnvironment;
 use nodes::{ArenaTree, Node, NodeId};
-use project::repos::{self, repository::{self, add_repository, get_repository_info, remove_repository, Repository, RepositoryInfo}, repository_tree::{build_repository_tree, RepositoryTree}};
+use project::repos::{self, repository::{self, add_repository, remove_repository, Repository, RepositoryInfo}, repository_tree::{build_repository_tree, RepositoryTree}};
 use rand::Rng;
-use serde_json::{Map, Value};
 use tauri::api::file;
 use walkdir::{DirEntry, WalkDir};
 
 use crate::{
-    analyzers::json_analyzer::JsonAnalyzeTask,
     directory_image::{take_directory_image, DirectoryImage},
     project::project::Project,
     project::repos::repository::{get_repositories}
@@ -114,9 +112,7 @@ fn c_get_project_trees() -> Vec<RepositoryTree> {
     let mut trees:Vec<RepositoryTree> = Vec::new();
 
     for repository in repositories {
-        // let path_buf = PathBuf::from(repository.folder_path);
-        let path = Path::new(&repository.folder_path);
-        let tree = build_repository_tree(path);
+        let tree = build_repository_tree(&repository);
         trees.push(tree);
     }
 
@@ -138,7 +134,7 @@ fn c_get_directory_images() -> Vec<DirectoryImage> {
 fn c_get_repositories() -> Vec<RepositoryInfo> {
     let repositories = get_repositories(&EDITOR_ENVIRONMENT.get().unwrap())
     .into_iter()
-    .map(|repository| get_repository_info(&repository))
+    .map(|repository| RepositoryInfo::from(repository))
     .collect();
     repositories
 }
