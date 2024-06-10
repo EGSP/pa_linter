@@ -26,12 +26,6 @@ impl EditorEnvironment{
         Ok(workspace_folder)
     }
 
-    pub fn get_images_folder(&self) -> Result<PathBuf,String>{
-        let images_folder = PathBuf::from(&self.get_workspace_folder().unwrap()).join(IMAGES_FOLDER_NAME);
-
-        Ok(images_folder)
-    }
-
     pub fn get_or_create_folder(&self, folder_name : &str) -> Result<PathBuf,String>{
         let folder = PathBuf::from(&self.get_workspace_folder().unwrap()).join(folder_name);
         if !folder.exists(){
@@ -43,23 +37,7 @@ impl EditorEnvironment{
         Ok(folder)
     }
 
-    pub fn get_directory_images(&self) -> Vec<DirectoryImage>
-    {
-        let mut directory_images : Vec<DirectoryImage> = Vec::new();
-        // read images folder to find json files
-        for entry in std::fs::read_dir(self.get_or_create_folder(IMAGES_FOLDER_NAME).unwrap()).unwrap() {
-            let entry = entry.unwrap();
-            if entry.file_name().to_str().unwrap().ends_with(".json"){
-                let file_content = std::fs::read_to_string(entry.path()).unwrap();
-                let directory_image = serde_json::from_str(&file_content).unwrap();
-                directory_images.push(directory_image);
-            }
-        }
-
-        directory_images
-    }
-
-    pub fn ini_workspace_folder(&self) -> Result<PathBuf,String>{
+    fn ini_workspace_folder(&self) -> Result<PathBuf,String>{
    
         let workspace_folder = PathBuf::from(&self.executable_folder_path).join(WORKSPACE_FOLDER_NAME);
         if workspace_folder.exists(){
@@ -73,6 +51,7 @@ impl EditorEnvironment{
         }
     }
     
+    #[deprecated(note = "use get_or_create_folder instead")]
     pub fn ini_images_folder(&self) -> Result<PathBuf,String>{
         let images_folder = self.get_workspace_folder().unwrap().join(IMAGES_FOLDER_NAME);
         if images_folder.exists(){
@@ -128,20 +107,20 @@ pub fn reveal_in_explorer(path: &Path)-> Result<(),String>{
     Ok(())
 }
 
-pub fn debug_editor_environment() -> Result<(),String>{
-    println!("DEBUG EDITOR ENVIRONMENT:");
-    let editor_env = try_ini_editor_environment();
-    if editor_env.is_err(){
-        return Err(editor_env.err().unwrap());
-    }
-    let editor_env = editor_env.unwrap();
-    println!("EDITOR ENV: {:#?}", editor_env);
+// pub fn debug_editor_environment() -> Result<(),String>{
+//     println!("DEBUG EDITOR ENVIRONMENT:");
+//     let editor_env = try_ini_editor_environment();
+//     if editor_env.is_err(){
+//         return Err(editor_env.err().unwrap());
+//     }
+//     let editor_env = editor_env.unwrap();
+//     println!("EDITOR ENV: {:#?}", editor_env);
 
-    let directory_images = editor_env.get_directory_images();
-    println!("DIRECTORY IMAGES: ");
-    for image in directory_images {
-        println!("IMAGE name: {}; files: {}", image.name, image.files.len());
-    }
+//     let directory_images = editor_env.get_directory_images();
+//     println!("DIRECTORY IMAGES: ");
+//     for image in directory_images {
+//         println!("IMAGE name: {}; files: {}", image.name, image.files.len());
+//     }
 
-    Ok(())
-}
+//     Ok(())
+// }

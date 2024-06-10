@@ -5,11 +5,12 @@ use core::panic;
 use std::{cell::OnceCell, path::{Path, PathBuf}, process::Command, sync::OnceLock};
 
 use directory_image::{get_directory_images, save_directory_image};
-use editor::EditorEnvironment;
+use editor::{editor::*, editor_runtime::EditorRuntimeData};
 use nodes::{ArenaTree, Node, NodeId};
 use project::repos::{self, repository::{self, add_repository, remove_repository, Repository, RepositoryInfo}, repository_tree::{build_repository_tree, RepositoryTree}};
 use rand::Rng;
-use tauri::api::file;
+use tauri::{api::file, State};
+use ui::states::EditorRuntimeState;
 use walkdir::{DirEntry, WalkDir};
 
 use crate::{
@@ -31,14 +32,11 @@ static PROJECT: OnceLock<Project> = OnceLock::new();
 static EDITOR_ENVIRONMENT: OnceLock<EditorEnvironment> = OnceLock::new();
 
 fn main() {
-    let editor_env = editor::try_ini_editor_environment();
+    let editor_env = try_ini_editor_environment();
     if editor_env.is_err() {
         panic!("{}", editor_env.err().unwrap());
     }
     let _ = EDITOR_ENVIRONMENT.set(editor_env.unwrap());
-
-    const PROJECT_TEST_FOLDER_PATH: &str =
-        "c:/Workroot/softdev/pa_linter_test_tree/Consultant-Balance-main";
 
     // let project = Project::try_initilize_project(PROJECT_TEST_FOLDER_PATH);
     // if project.is_err() {
@@ -59,9 +57,6 @@ fn main() {
 
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
-            greet,
-            analyze_folder,
-            get_project_folder_arena_tree,
             c_take_directory_image,
             c_get_directory_images,
             c_get_repositories,
@@ -77,32 +72,13 @@ fn main() {
 
 #[tauri::command]
 fn c_reveal_in_explorer(path: &str) {
-    let _ = editor::reveal_in_explorer(Path::new(path));
+    let _ = reveal_in_explorer(Path::new(path));
 }
 
 #[tauri::command]
 fn c_reveal_workspace_folder(){
     let editor_env = EDITOR_ENVIRONMENT.get().unwrap();
-    let _ = editor::reveal_in_explorer(editor_env.get_workspace_folder().unwrap().as_path());
-}
-
-#[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}!", name)
-}
-
-#[tauri::command]
-fn analyze_folder(folder_path: &str) -> Vec<analyzer::AnalysisResult> {
-    analyzer::analyze_folder(folder_path)
-}
-
-#[tauri::command]
-fn get_project_folder_arena_tree(folder_path: &Path) -> Result<ArenaTree, String> {
-    let arena_tree = scan_project_folder(folder_path).unwrap();
-
-    let serialized = serde_json::to_string(&arena_tree).unwrap();
-    println!("{}", serialized);
-    Ok(arena_tree)
+    let _ = reveal_in_explorer(editor_env.get_workspace_folder().unwrap().as_path());
 }
 
 #[tauri::command]
@@ -151,67 +127,12 @@ fn c_remove_repository(repository_folder: &Path) {
     let _ = remove_repository(repository_folder, &editor_env);
 }
 
-fn scan_project_folder(folder_path: &Path) -> Result<ArenaTree, String> {
-    // if folder contains modinfo.json file, then it is a project folder
-    if !folder_path.join("modinfo.json").exists() {
-        return Err(
-            "Folder is not a project folder. Project folder must contain modinfo.json file"
-                .to_string(),
-        );
-    }
-
-    let mut arena_tree = ArenaTree::new();
-
-    // iterate directory
-    iterate_directory(folder_path, &None, &mut arena_tree);
-
-    Ok(arena_tree)
+#[tauri::command]
+fn c_analyze_repositories(state: State<EditorRuntimeState>) {
+    let mut editor_runtime_data = state.0.read();
+    
 }
 
-
-
-fn iterate_directory(folder_path: &Path, previous_node: &Option<i32>, arena_tree: &mut ArenaTree) {
-    let folder_node: Node = Node::new(get_path_name(folder_path), String::from(""));
-    let folder_node_id: i32;
-
-    if previous_node.is_none() {
-        if arena_tree.get_root_node().is_none() {
-            folder_node_id = arena_tree.add_root_node(folder_node);
-        } else {
-            // корневые ноды можно определять по наличию родителя - можно сделать когда-нибудь.
-            // folder_node_id = arena_tree.add_node(folder_node);
-            panic!("Root node already exists in arena tree");
-        }
-    } else {
-        folder_node_id = arena_tree.add_node_to_parent_id(previous_node.unwrap(), folder_node);
-    }
-
-    for entry in WalkDir::new(folder_path.to_str().unwrap())
-        .min_depth(1)
-        .max_depth(1)
-    {
-        let entry = entry.unwrap();
-        let entry_name = entry.file_name().to_str().unwrap();
-        let entry_path = folder_path.join(entry_name);
-        let entry_path_ref = entry_path.as_path();
-
-        println!("{} + {}", folder_path.to_str().unwrap(), entry_name);
-        println!(" ");
-
-        if entry.file_type().is_dir() {
-            iterate_directory(entry_path_ref, &Some(folder_node_id), arena_tree);
-        } else if entry.file_type().is_file() {
-            let file_node = Node::new(entry_name.to_string(), String::from(""));
-            arena_tree.add_node_to_parent_id(folder_node_id, file_node);
-        } else {
-            // do nothing
-        }
-    }
-}
-
-fn get_path_name(path: &Path) -> String {
-    path.file_name().unwrap().to_str().unwrap().to_string()
-}
 
 // найти свойства в json файлах со строковыми значениями.
 // если значение это относительный путь, то нужно проверить его на корректность.

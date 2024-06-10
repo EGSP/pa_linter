@@ -23,7 +23,7 @@ export type Repository={
 
 export type RepositoryInfo = {
     folder_path: string,
-    mod_name: string
+    mod_identifier: string
 }
 
 export type RepositoryTree={

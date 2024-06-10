@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use walkdir::WalkDir;
 
-use crate::editor::EditorEnvironment;
+use crate::editor::editor::*;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct DirectoryImage {

@@ -67,13 +67,13 @@
 			{#each repositories as repository}
 				<ListBoxItem
 					bind:group={selected_value}
-					value={repository.mod_name}
+					value={repository.mod_identifier}
 					name="repository_item"
 				>
 					<svelte:fragment slot="lead">
 						<CarbonRepoSourceCode />
 					</svelte:fragment>
-					<Label text={repository.mod_name} />
+					<Label text={repository.mod_identifier} />
 				</ListBoxItem>
 			{/each}
 		</ListBox>

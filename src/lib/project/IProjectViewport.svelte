@@ -42,7 +42,7 @@
 		// console.log(repository_trees);
 
 		for (let repository_tree of repository_trees) {
-			console.log('Building tree for ' + repository_tree.repository_info.mod_name);
+			console.log('Building tree for ' + repository_tree.repository_info.mod_identifier);
 			// console.log(repository_tree.entries);
 			let nodes_tree = new Array<TreeNode>();
 
@@ -95,8 +95,8 @@
 							text,
 							children: repository_entry.children.length > 0 ? new Array<TreeNode>() : undefined
 						};
-						console.log(repository_entry)
-						console.log(node);
+						// console.log(repository_entry)
+						// console.log(node);
 
 						// console.log('Adding node %d to project tree', node.id);
 						add_to_parent_or_root(node, repository_entry);
@@ -154,7 +154,7 @@
 
 			console.log(nodes_tree);
 			repository_node_trees.push(nodes_tree);
-			repository_node_trees_names.push(repository_tree.repository_info.mod_name);
+			repository_node_trees_names.push(repository_tree.repository_info.mod_identifier);
 		}
 		
 		// console.log('repository_node_trees');
