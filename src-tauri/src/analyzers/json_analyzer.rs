@@ -2,6 +2,7 @@ use std::{fs, io::Read, sync::atomic::AtomicI32};
 
 use atomic_counter::{AtomicCounter, RelaxedCounter};
 use owo_colors::OwoColorize;
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use serde_json::{Map, Value};
 
 use crate::{
@@ -50,7 +51,8 @@ impl<'a> JsonAnalyzeTask<'a> {
 
             let mut tree_logbox = Logbox::new();
             let mut COUNTER = RelaxedCounter::new(0);
-            for entry in json_entries {
+
+            json_entries.par_iter().for_each(move|entry| {
                 let mut entry_logbox = Logbox::new();
                 entry_logbox.push_message(format!(
                     "{}: {:?}",
@@ -91,6 +93,10 @@ impl<'a> JsonAnalyzeTask<'a> {
                     tree_logbox.push_message(format!("{}: {:?}", "printing 10 entries".on_magenta().bold(), COUNTER.get()));
                     tree_logbox.print();
                 }
+            });
+
+            for entry in json_entries {
+                
             }
 
             tree_logbox.print();
