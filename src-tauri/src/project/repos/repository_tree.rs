@@ -9,7 +9,15 @@ use super::repository::{Repository, RepositoryInfo};
 pub struct EntryID(i32);
 
 #[derive(Debug, Serialize, Deserialize, Hash, PartialEq, Eq, Clone)]
-pub struct RelativePath(String);
+pub struct RelativePath{
+    pub value: String,
+}
+
+impl RelativePath {
+    pub fn new(path: String) -> Self {
+        Self { value: path.replace("\\", "/") }
+    }
+}
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct RepositoryTreeEntry {
@@ -32,7 +40,7 @@ impl RepositoryTreeEntry {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct RepositoryTree {
     pub entries: Vec<RepositoryTreeEntry>,
     pub last_generated_id: EntryID,
@@ -133,7 +141,7 @@ pub fn get_entry_relative_path(
     let root_path = repository_tree.repository_info.folder_path.clone();
     let absolute_entry_path = repository_tree_entry.path.clone();
 
-    RelativePath(
+    RelativePath::new(
         absolute_entry_path
             .strip_prefix(&root_path)
             .unwrap()
@@ -141,7 +149,7 @@ pub fn get_entry_relative_path(
     )
 }
 
-fn find_repository_entry(
+pub fn find_repository_entry(
     search_relative_path: &RelativePath,
     repository_trees: &Vec<RepositoryTree>,
 ) -> Option<(RepositoryInfo, RepositoryTreeEntry)> {

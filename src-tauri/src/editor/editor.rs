@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::directory_image::DirectoryImage;
 
-#[derive(Serialize,Deserialize,Debug)]
+#[derive(Serialize,Deserialize,Debug,Clone)]
 pub struct EditorEnvironment{
     pub executable_file_path : String,
     pub executable_folder_path : String

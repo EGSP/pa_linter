@@ -19,8 +19,7 @@
 
 	let analysis_results = new Array<AnalysisResult>();
 	async function analyze() {
-		return;
-		analysis_results = await invoke<AnalysisResult[]>('analyze_folder', {
+		analysis_results = await invoke<AnalysisResult[]>('c_analyze_repositories', {
 			folderPath: 'c:/Workroot/softdev/pa_linter_test'
 		});
 

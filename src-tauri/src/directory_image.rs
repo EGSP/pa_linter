@@ -1,9 +1,9 @@
 use serde::{Deserialize, Serialize};
 use walkdir::WalkDir;
 
-use crate::editor::editor::*;
+use crate::{editor::{editor::*, editor_runtime::EditorRuntimeData}, project::repos::repository_tree::RelativePath};
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct DirectoryImage {
     pub name: String,
     pub files: Vec<String>,

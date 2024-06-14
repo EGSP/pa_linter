@@ -4,9 +4,11 @@
 use core::panic;
 use std::{cell::OnceCell, path::{Path, PathBuf}, process::Command, sync::OnceLock};
 
+use analyzers::analyzer::FileAnalysisResult;
 use directory_image::{get_directory_images, save_directory_image};
 use editor::{editor::*, editor_runtime::EditorRuntimeData};
 use nodes::{ArenaTree, Node, NodeId};
+use parking_lot::RwLock;
 use project::repos::{self, repository::{self, add_repository, remove_repository, Repository, RepositoryInfo}, repository_tree::{build_repository_tree, RepositoryTree}};
 use rand::Rng;
 use tauri::{api::file, State};
@@ -16,7 +18,8 @@ use walkdir::{DirEntry, WalkDir};
 use crate::{
     directory_image::{take_directory_image, DirectoryImage},
     project::project::Project,
-    project::repos::repository::{get_repositories}
+    project::repos::repository::{get_repositories},
+    logs::logbox::Log
 };
 
 mod analyzer;
@@ -27,6 +30,7 @@ mod project;
 mod editor;
 mod ui;
 mod quicks;
+mod logs;
 
 static PROJECT: OnceLock<Project> = OnceLock::new();
 static EDITOR_ENVIRONMENT: OnceLock<EditorEnvironment> = OnceLock::new();
@@ -36,7 +40,8 @@ fn main() {
     if editor_env.is_err() {
         panic!("{}", editor_env.err().unwrap());
     }
-    let _ = EDITOR_ENVIRONMENT.set(editor_env.unwrap());
+    let _ = EDITOR_ENVIRONMENT.set(editor_env.clone().unwrap());
+    let editor_runtime_data = EditorRuntimeData::new(editor_env.unwrap());
 
     // let project = Project::try_initilize_project(PROJECT_TEST_FOLDER_PATH);
     // if project.is_err() {
@@ -54,8 +59,10 @@ fn main() {
     //     let repositories = repository::find_repositories(&folder_path.unwrap());
     //     println!("{:?}", repositories);
     // });
-
+    let devtools = devtools::init();
     tauri::Builder::default()
+        .plugin(devtools)
+        .manage(EditorRuntimeState(RwLock::new(editor_runtime_data)))
         .invoke_handler(tauri::generate_handler![
             c_take_directory_image,
             c_get_directory_images,
@@ -64,7 +71,8 @@ fn main() {
             c_remove_repository,
             c_get_project_trees,
             c_reveal_in_explorer,
-            c_reveal_workspace_folder
+            c_reveal_workspace_folder,
+            c_analyze_repositories
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -82,15 +90,17 @@ fn c_reveal_workspace_folder(){
 }
 
 #[tauri::command]
-fn c_get_project_trees() -> Vec<RepositoryTree> {
+fn c_get_project_trees(state: State<EditorRuntimeState>) -> Vec<RepositoryTree> {
     let repositories = get_repositories(&EDITOR_ENVIRONMENT.get().unwrap());
 
     let mut trees:Vec<RepositoryTree> = Vec::new();
-
     for repository in repositories {
         let tree = build_repository_tree(&repository);
         trees.push(tree);
     }
+
+    let mut editor_runtime_data = state.0.write();
+    editor_runtime_data.repository_trees = trees.clone();
 
     trees
 }
@@ -102,8 +112,12 @@ fn c_take_directory_image(folder_path: &Path) {
 }
 
 #[tauri::command]
-fn c_get_directory_images() -> Vec<DirectoryImage> {
-    get_directory_images(EDITOR_ENVIRONMENT.get().unwrap())
+fn c_get_directory_images(state: State<EditorRuntimeState>) -> Vec<DirectoryImage> {
+    let images =get_directory_images(EDITOR_ENVIRONMENT.get().unwrap());
+    
+    let mut editer_runtime_data = state.0.write();
+    editer_runtime_data.directory_images = images.clone();
+    images
 }
 
 #[tauri::command]
@@ -128,9 +142,11 @@ fn c_remove_repository(repository_folder: &Path) {
 }
 
 #[tauri::command]
-fn c_analyze_repositories(state: State<EditorRuntimeState>) {
+fn c_analyze_repositories(state: State<EditorRuntimeState>) -> Vec<FileAnalysisResult> {
     let mut editor_runtime_data = state.0.read();
-    
+
+    let results = analyzers::analyzer::analyze_repositories(&mut editor_runtime_data);
+    results
 }
 
 
